@@ -2,7 +2,7 @@
 <resources>
     <style name="Theme.MySplashscreen" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/black</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/splash</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/official_journey_logo__1_</item>
         <item name="postSplashScreenTheme">@style/Theme.TheJourney</item>
     </style>
     <style name="Theme.TheJourney" parent="android:Theme.Material.Light.NoActionBar" />
