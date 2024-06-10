@@ -62,6 +62,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.thejourney.model.TabBarItem
+import com.example.thejourney.ui.screens.ChatScreen
+import com.example.thejourney.ui.screens.EventScreen
+import com.example.thejourney.ui.screens.HomeScreen
 import com.example.thejourney.ui.theme.TheJourneyTheme
 import kotlinx.coroutines.launch
 
@@ -124,13 +127,13 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize()) { innerPadding ->
                     NavHost(navController = navController, startDestination = homeTab.title, modifier = Modifier.padding(innerPadding)) {
                         composable(homeTab.title){
-                            Text(text = homeTab.title)
+                            HomeScreen()
                         }
                         composable(eventTab.title){
-                            Text(text = eventTab.title)
+                            EventScreen()
                         }
                         composable(chatTab.title){
-                            Text(text = chatTab.title)
+                            ChatScreen()
                         }
 
                     }
@@ -154,15 +157,6 @@ fun JourneyTopAppBar(
             horizontalArrangement = Arrangement.Center,
             modifier = Modifier.fillMaxWidth()
         ) {
-  /*          Image(
-                painter = painterResource(id = R.drawable.logo_small),
-                contentDescription = "Logo",
-                modifier = Modifier.align(Alignment.Bottom),
-            )
-           Spacer(modifier = Modifier.width(8.dp))
-
-*/
-
             Text(
                 text = stringResource(R.string.app_name),
                 modifier = Modifier.align(Alignment.CenterVertically)
@@ -198,7 +192,7 @@ fun DrawerContents(
     Column(
         modifier = Modifier.padding(16.dp)) {
         Image(
-            painter = painterResource(id = R.drawable.official_journey_logo__1_),
+            painter = painterResource(id = R.drawable.icon_frame),
             contentDescription = "Logo",
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )
@@ -312,5 +306,3 @@ fun TheJourneyPreview() {
         JourneyTopAppBar({})
     }
 }
-
-
