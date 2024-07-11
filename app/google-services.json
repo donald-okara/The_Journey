@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "768225296166",
+    "project_id": "the-journey-1e2a0",
+    "storage_bucket": "the-journey-1e2a0.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:768225296166:android:fe6e51967a298765fa4be7",
+        "android_client_info": {
+          "package_name": "com.example.thejourney"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "768225296166-4qfo94ihetujbot142g0gadifk2lfsdq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.thejourney",
+            "certificate_hash": "df59ca9ed22366c80a665596ba570fa476da981b"
+          }
+        },
+        {
+          "client_id": "768225296166-i64gn8jpr8rjc03rtivjuq5l5iq5uent.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC6EWE7d8k2zj4RBoY7GhdKvENr37U54sc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "768225296166-i64gn8jpr8rjc03rtivjuq5l5iq5uent.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
