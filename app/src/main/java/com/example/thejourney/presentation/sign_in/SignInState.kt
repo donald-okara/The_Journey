@@ -1,4 +1,4 @@
-package com.example.thejourney.sign_in
+package com.example.thejourney.presentation.sign_in
 
 data class SignInState(
     val isSignInSuccessful : Boolean = false,

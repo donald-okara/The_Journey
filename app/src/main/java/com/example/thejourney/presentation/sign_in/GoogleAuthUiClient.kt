@@ -1,4 +1,4 @@
-package com.example.thejourney.sign_in
+package com.example.thejourney.presentation.sign_in
 
 import android.content.Intent
 import android.content.IntentSender
@@ -31,7 +31,7 @@ class GoogleAuthUiClient(
         return result?.pendingIntent?.intentSender
     }
 
-    suspend fun getSignInWithIntent(intent : Intent): SignInResult{
+    suspend fun getSignInWithIntent(intent : Intent): SignInResult {
         val credential = oneTapClient.getSignInCredentialFromIntent(intent)
         val googleIdToken = credential.googleIdToken
         val googleCredentials = GoogleAuthProvider.getCredential(googleIdToken , null)

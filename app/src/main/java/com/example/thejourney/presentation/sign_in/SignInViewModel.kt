@@ -1,9 +1,7 @@
-package com.example.thejourney.sign_in
+package com.example.thejourney.presentation.sign_in
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.thejourney.sign_in.SignInResult
-import com.example.thejourney.sign_in.SignInState
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow

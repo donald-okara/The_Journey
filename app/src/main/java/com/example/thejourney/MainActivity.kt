@@ -10,8 +10,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,10 +23,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.thejourney.sign_in.EmailSignInScreen
-import com.example.thejourney.sign_in.EmailSignUpScreen
-import com.example.thejourney.sign_in.GoogleAuthUiClient
-import com.example.thejourney.sign_in.SignInViewModel
+import com.example.thejourney.presentation.sign_in.EmailSignInScreen
+import com.example.thejourney.presentation.sign_in.EmailSignUpScreen
+import com.example.thejourney.presentation.sign_in.GoogleAuthUiClient
+import com.example.thejourney.presentation.sign_in.SignInViewModel
 import com.example.thejourney.ui.theme.TheJourneyTheme
 import com.google.android.gms.auth.api.identity.Identity
 import kotlinx.coroutines.launch
