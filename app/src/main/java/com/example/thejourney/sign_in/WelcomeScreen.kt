@@ -1,5 +1,6 @@
 import android.widget.Toast
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -21,6 +22,8 @@ import com.example.thejourney.sign_in.SignInState
 fun WelcomeScreen(
     state: SignInState,
     onSignInWithGoogle: () -> Unit,
+    onNavigateToSignIn: () -> Unit,
+    onNavigateToSignUp: () -> Unit
 ) {
     val context = LocalContext.current
     LaunchedEffect(state.signInError) {
@@ -81,10 +84,38 @@ fun WelcomeScreen(
                             contentDescription = null,
                             modifier = Modifier.size(32.dp) // Adjusted size for better UI
                         )
+
                         Spacer(Modifier.width(24.dp))
+
                         Text("Continue with Google")
                     }
+
                 }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text("or")
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedButton(
+                    onClick = onNavigateToSignUp,
+                    shape = RoundedCornerShape(64.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(64.dp)
+                        .padding(vertical = 8.dp)
+                ) {
+                    Text("Sign Up with Email")
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    "Already have an account? Log in",
+                    modifier = Modifier
+                        .clickable { onNavigateToSignIn() }
+                )
             }
         }
     }

@@ -25,6 +25,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.thejourney.sign_in.EmailSignInScreen
+import com.example.thejourney.sign_in.EmailSignUpScreen
 import com.example.thejourney.sign_in.GoogleAuthUiClient
 import com.example.thejourney.sign_in.SignInViewModel
 import com.example.thejourney.ui.theme.TheJourneyTheme
@@ -47,6 +49,7 @@ class MainActivity : ComponentActivity() {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     val navController = rememberNavController()
                     NavHost(navController = navController, startDestination = "welcome"){
+                        
                         composable("welcome"){
                             val viewModel = viewModel<SignInViewModel>()
                             val state by viewModel.state.collectAsStateWithLifecycle()
@@ -91,9 +94,41 @@ class MainActivity : ComponentActivity() {
                                             ).build()
                                         )
                                     }
+                                },
+                                onNavigateToSignIn = {
+                                    navController.navigate("emailSignIn")
+                                },
+                                onNavigateToSignUp = {
+                                    navController.navigate("emailSignUp")
                                 }
                             )
 
+                        }
+
+                        composable("emailSignIn") {
+                            val viewModel = viewModel<SignInViewModel>()
+                            val state by viewModel.state.collectAsStateWithLifecycle()
+
+                            EmailSignInScreen(
+                                state = state,
+                                onSignInWithEmail = { email, password ->
+                                    viewModel.signInWithEmail(email, password)
+                                },
+                                onNavigateToSignUp = { navController.navigate("emailSignUp") }
+                            )
+                        }
+
+                        composable("emailSignUp") {
+                            val viewModel = viewModel<SignInViewModel>()
+                            val state by viewModel.state.collectAsStateWithLifecycle()
+
+                            EmailSignUpScreen(
+                                state = state,
+                                onSignUpWithEmail = { email, password ->
+                                    viewModel.signUpWithEmail(email, password)
+                                },
+                                onNavigateToSignIn = { navController.navigate("emailSignIn") }
+                            )
                         }
                     }
                 }
