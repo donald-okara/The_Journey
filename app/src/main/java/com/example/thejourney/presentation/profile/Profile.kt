@@ -1,4 +1,4 @@
-package com.example.thejourney.ui.screens
+package com.example.thejourney.presentation.profile
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -50,7 +50,7 @@ fun ProfileScreen(
                 text = userData.username,
                 style = MaterialTheme.typography.headlineMedium,
                 textAlign = TextAlign.Center,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.SemiBold
             )
         }
 

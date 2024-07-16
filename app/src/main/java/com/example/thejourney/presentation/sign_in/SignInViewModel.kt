@@ -33,10 +33,6 @@ class SignInViewModel : ViewModel() {
         }
     }
 
-    fun resetState(){
-        _state.update { SignInState() }
-    }
-
     fun signInWithEmail(email: String, password: String) {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
@@ -113,6 +109,26 @@ class SignInViewModel : ViewModel() {
             Log.e("SignInViewModel", "Error adding user to Firestore: ${e.message}", e)
             _state.update { it.copy(isLoading = false, signUpError = "Failed to save user data.") }
         }
+    }
+
+    fun getSignedInUser(): UserData? {
+        val user = firebaseAuth.currentUser
+        return user?.let {
+            UserData(
+                userId = it.uid,
+                username = it.displayName ?: "Default Username",
+                alias = null,
+                profilePictureUrl = it.photoUrl?.toString(),
+                headerImageUrl = null,
+                dateOfBirth = null,
+                biography = null,
+                biographyBackgroundImageUrl = null
+            )
+        }
+    }
+
+    fun resetState(){
+        _state.update { SignInState() }
     }
 
 }
