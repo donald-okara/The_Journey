@@ -25,7 +25,6 @@ import com.example.thejourney.presentation.sign_in.UserData
 fun ProfileScreen(
     userData: UserData?,
     onSignOut: () -> Unit,
-    modifier: Modifier = Modifier
 ){
     Column(
         Modifier.fillMaxSize(),
