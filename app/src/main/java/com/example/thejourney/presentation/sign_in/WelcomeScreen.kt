@@ -13,6 +13,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.Icon
+import androidx.compose.material.TextButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.MailOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -106,11 +111,12 @@ fun WelcomeScreen(
 
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                //Spacer(modifier = Modifier.height(16.dp))
 
                 Text("or")
 
-                Spacer(modifier = Modifier.height(16.dp))
+                //Spacer(modifier = Modifier.height(16.dp))
+
 
                 OutlinedButton(
                     onClick = onNavigateToSignUp,
@@ -120,16 +126,43 @@ fun WelcomeScreen(
                         .height(64.dp)
                         .padding(vertical = 8.dp)
                 ) {
-                    Text("Sign Up with Email")
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ){
+                        Icon(
+
+                            imageVector = Icons.Default.Email,
+                            tint = MaterialTheme.colorScheme.primary,
+                            contentDescription = "Sign in with Email",
+                            modifier = Modifier.size(24.dp) // Adjusted size for better UI
+                        )
+
+                        Spacer(Modifier.width(24.dp))
+
+                        Text("Sign Up with Email")
+
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Text(
-                    "Already have an account? Log in",
-                    modifier = Modifier
-                        .clickable { onNavigateToSignIn() }
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "Already have an account? "
+                    )
+                    TextButton(
+                        onClick = { onNavigateToSignIn() }
+                    ) {
+                        Text(
+                            text = "Log in",
+                            color = MaterialTheme.colorScheme.primary)
+
+                    }
+
+                }
+
             }
         }
     }

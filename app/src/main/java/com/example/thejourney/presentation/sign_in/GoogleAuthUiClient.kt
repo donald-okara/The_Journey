@@ -2,12 +2,15 @@ package com.example.thejourney.presentation.sign_in
 
 import android.content.Intent
 import android.content.IntentSender
+import android.util.Log
 import com.example.thejourney.R
 import com.google.android.gms.auth.api.identity.BeginSignInRequest
 import com.google.android.gms.auth.api.identity.SignInClient
+import com.google.firebase.auth.FirebaseUser
 
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.tasks.await
@@ -17,6 +20,7 @@ class GoogleAuthUiClient(
     private val oneTapClient : SignInClient
 ) {
     private val auth = Firebase.auth
+    private val firestore = FirebaseFirestore.getInstance()
 
     suspend fun signIn() : IntentSender? {
         val result = try {
@@ -38,12 +42,19 @@ class GoogleAuthUiClient(
 
         return try {
             val user = auth.signInWithCredential(googleCredentials).await().user
+            addToFirestore(user)
+
             SignInResult(
                 data = user?.run {
                     UserData(
                         userId = uid,
                         username = displayName,
-                        profilePictureUrl = photoUrl?.toString()
+                        alias = null,
+                        profilePictureUrl = photoUrl?.toString(),
+                        headerImageUrl = null,
+                        dateOfBirth = null,
+                        biography = null,
+                        biographyBackgroundImageUrl = null
                     )
                 },
                 errorMessage = null
@@ -56,6 +67,26 @@ class GoogleAuthUiClient(
                 data = null,
                 errorMessage = e.message
             )
+        }
+    }
+
+    private suspend fun addToFirestore(user: FirebaseUser?) {
+        user?.let {
+            val userData = UserData(
+                userId = it.uid,
+                username = it.displayName ?: "Default Username",
+                alias = null,
+                profilePictureUrl = it.photoUrl?.toString(),
+                headerImageUrl = null, // Set default or user-provided value
+                dateOfBirth = null, // Set default or user-provided value
+                biography = null, // Set default or user-provided value
+                biographyBackgroundImageUrl = null // Set default or user-provided value
+            )
+            try {
+                firestore.collection("users").document(it.uid).set(userData).await()
+            } catch (e: Exception) {
+                Log.e("GoogleAuthUiClient", "Error adding user to Firestore: ${e.message}", e)
+            }
         }
     }
 
@@ -74,7 +105,12 @@ class GoogleAuthUiClient(
         UserData(
             userId = uid,
             username = displayName,
-            profilePictureUrl = photoUrl.toString()
+            alias = null,
+            profilePictureUrl = photoUrl.toString(),
+            headerImageUrl = null,
+            dateOfBirth = null,
+            biography = null,
+            biographyBackgroundImageUrl = null
         )
     }
 

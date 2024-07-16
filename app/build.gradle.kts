@@ -71,6 +71,7 @@ dependencies {
     implementation("androidx.compose.material:material:1.3.1")
     implementation(libs.androidx.lifecycle.runtime.compose.android)
     implementation(libs.androidx.ui.text.google.fonts)
+    implementation(libs.firebase.firestore.ktx)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
