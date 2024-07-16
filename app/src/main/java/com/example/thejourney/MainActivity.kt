@@ -44,27 +44,26 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         enableEdgeToEdge()
+
+        // Create SignInViewModel instance
+        val viewModel = SignInViewModel()
+
+        // Determine the start destination
+        val startDestination = if (viewModel.getSignedInUser() != null) "profile" else "welcome"
+
         setContent {
             TheJourneyTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     val navController = rememberNavController()
-                    val viewModel = viewModel<SignInViewModel>()
 
-                    LaunchedEffect(key1 = Unit) {
-                        if(viewModel.getSignedInUser() != null) {
-                            navController.navigate("profile")
-                        }
-                    }
-
-                    NavHost(navController = navController, startDestination = "welcome"){
-
-                        composable("welcome"){
+                    NavHost(navController = navController, startDestination = startDestination) {
+                        composable("welcome") {
                             val state by viewModel.state.collectAsStateWithLifecycle()
                             val launcher = rememberLauncherForActivityResult(
                                 contract = ActivityResultContracts.StartIntentSenderForResult(),
                                 onResult = { result ->
                                     viewModel.setLoading(false)  // Reset loading state when result is received
-                                    if (result.resultCode == RESULT_OK){
+                                    if (result.resultCode == RESULT_OK) {
                                         lifecycleScope.launch {
                                             val signInResult = googleAuthUiClient.getSignInWithIntent(
                                                 intent = result.data ?: return@launch
@@ -83,7 +82,9 @@ class MainActivity : ComponentActivity() {
                                         Toast.LENGTH_LONG
                                     ).show()
 
-                                    navController.navigate("profile")
+                                    navController.navigate("profile") {
+                                        popUpTo("welcome") { inclusive = true }
+                                    }
                                     viewModel.resetState()
                                 }
 
@@ -109,7 +110,6 @@ class MainActivity : ComponentActivity() {
                                     navController.navigate("emailSignUp")
                                 }
                             )
-
                         }
 
                         composable("emailSignIn") {
@@ -136,7 +136,7 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-                        composable("profile"){
+                        composable("profile") {
                             ProfileScreen(
                                 userData = viewModel.getSignedInUser(),
                                 onSignOut = {
@@ -148,7 +148,9 @@ class MainActivity : ComponentActivity() {
                                             Toast.LENGTH_LONG
                                         ).show()
 
-                                        navController.popBackStack()
+                                        navController.navigate("welcome") {
+                                            popUpTo("profile") { inclusive = true }
+                                        }
                                     }
                                 }
                             )
@@ -157,21 +159,5 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    TheJourneyTheme {
-        Greeting("Android")
     }
 }
