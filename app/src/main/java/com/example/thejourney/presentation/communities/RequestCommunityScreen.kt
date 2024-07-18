@@ -48,7 +48,7 @@ fun RequestCommunityScreen(viewModel: CommunityViewModel) {
 
         Button(
             onClick = {
-                val communityRequest = CommunityRequest(
+                val communityRequest = Community(
                     name = name,
                     type = type,
                     requestedBy = "currentUserId",  // Replace with the actual user ID

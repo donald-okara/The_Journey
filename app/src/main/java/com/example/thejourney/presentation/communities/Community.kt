@@ -1,6 +1,6 @@
 package com.example.thejourney.presentation.communities
 
-data class CommunityRequest(
+data class Community(
     val name: String,
     val type: String,
     val requestedBy: String,

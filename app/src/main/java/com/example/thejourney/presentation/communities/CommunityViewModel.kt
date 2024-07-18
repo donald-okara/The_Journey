@@ -11,14 +11,14 @@ class CommunityViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
 
-    fun requestNewCommunity(communityRequest: CommunityRequest) {
+    fun requestNewCommunity(community: Community) {
         val userId = auth.currentUser?.uid
         if (userId != null) {
             Log.d("CommunityViewModel", "User ID: $userId")
-            Log.d("CommunityViewModel", "Community Request: $communityRequest")
+            Log.d("CommunityViewModel", "Community Request: $community")
 
             viewModelScope.launch {
-                db.collection("communityRequests").add(communityRequest)
+                db.collection("communities").add(community)
                     .addOnSuccessListener {
                         Log.d("CommunityViewModel", "DocumentSnapshot added with ID: ${it.id}")
                     }

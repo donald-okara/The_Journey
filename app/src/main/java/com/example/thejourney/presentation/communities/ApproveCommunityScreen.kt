@@ -18,10 +18,10 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun ApproveCommunityScreen(viewModel: AdminViewModel) {
-    val communityRequests by viewModel.communityRequests.collectAsState()
+    val communities by viewModel.communities.collectAsState()
 
     LazyColumn {
-        items(communityRequests) { request ->
+        items(communities) { request ->
             Card(modifier = Modifier.padding(8.dp)) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text("Name: ${request.name}")
