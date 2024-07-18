@@ -58,7 +58,7 @@ fun ApproveCommunityScreen(viewModel: AdminViewModel) {
         is CommunityState.Error -> {
             val errorMessage = (state as CommunityState.Error).message
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(text = errorMessage)
+                Text(text = "Dashboard failed to load: $errorMessage")
             }
         }
     }

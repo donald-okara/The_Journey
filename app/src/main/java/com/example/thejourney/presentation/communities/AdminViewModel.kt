@@ -20,20 +20,26 @@ class AdminViewModel : ViewModel() {
     }
 
     private fun fetchPendingRequests() {
-        viewModelScope.launch {
-            _state.value = CommunityState.Loading
-            db.collection("communities")
-                .whereEqualTo("status", "Pending")
-                .addSnapshotListener { snapshots, e ->
-                    if (e != null) {
-                        Log.w("ApproveCommunity", "Listen failed.", e)
-                        _state.value = CommunityState.Error("Failed to fetch pending requests: ${e.message}")
-                        return@addSnapshotListener
-                    }
+        try {
+            viewModelScope.launch {
+                _state.value = CommunityState.Loading
+                db.collection("communities")
+                    .whereEqualTo("status", "Pending")
+                    .addSnapshotListener { snapshots, e ->
+                        if (e != null) {
+                            Log.w("ApproveCommunity", "Listen failed.", e)
+                            _state.value = CommunityState.Error("Failed to fetch pending requests: ${e.message}")
+                            return@addSnapshotListener
+                        }
 
-                    val requests = snapshots?.documents?.mapNotNull { it.toObject(Community::class.java) }
-                    _state.value = CommunityState.Success(requests ?: emptyList())
-                }
+                        val requests = snapshots?.documents?.mapNotNull { it.toObject(Community::class.java) }
+                        _state.value = CommunityState.Success(requests ?: emptyList())
+                    }
+            }
+        } catch (e: Exception) {
+            Log.w("ApproveCommunity", "Error fetching pending requests", e)
+            _state.value = CommunityState.Error("Error fetching pending requests: ${e.message}")
+            TODO("Not yet implemented")
         }
     }
 
