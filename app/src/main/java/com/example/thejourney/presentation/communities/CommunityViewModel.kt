@@ -11,11 +11,24 @@ class CommunityViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
 
-    fun requestNewCommunity(community: Community) {
-        val userId = auth.currentUser?.uid
-        if (userId != null) {
+    fun getCurrentUserId(): String? {
+        return auth.currentUser?.uid
+    }
+
+    fun requestNewCommunity(communityName: String, communityType: String) {
+        val user = auth.currentUser
+        val userId = user?.uid
+        val username = user?.displayName // Assuming displayName is the username
+
+        if (userId != null && username != null) {
             Log.d("CommunityViewModel", "User ID: $userId")
-            Log.d("CommunityViewModel", "Community Request: $community")
+            Log.d("CommunityViewModel", "Community Request: $communityName")
+
+            val community = Community(
+                name = communityName,
+                type = communityType,
+                requestedBy = username
+            )
 
             viewModelScope.launch {
                 db.collection("communities").add(community)
@@ -27,7 +40,7 @@ class CommunityViewModel : ViewModel() {
                     }
             }
         } else {
-            Log.e("CommunityViewModel", "User not authenticated")
+            Log.e("CommunityViewModel", "User not authenticated or username is null")
         }
     }
 }

@@ -21,6 +21,8 @@ fun RequestCommunityScreen(viewModel: CommunityViewModel) {
     var name by remember { mutableStateOf("") }
     var type by remember { mutableStateOf("Campus") }  // Default type is Campus
 
+    val currentUserId = viewModel.getCurrentUserId()  // Fetch current user ID from ViewModel
+
     Column(
         modifier = Modifier.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -48,16 +50,11 @@ fun RequestCommunityScreen(viewModel: CommunityViewModel) {
 
         Button(
             onClick = {
-                val communityRequest = Community(
-                    name = name,
-                    type = type,
-                    requestedBy = "currentUserId",  // Replace with the actual user ID
-                    status = "Pending"
-                )
-                viewModel.requestNewCommunity(communityRequest)
+                viewModel.requestNewCommunity(name, type)
             }
         ) {
             Text("Request Community")
         }
     }
 }
+
