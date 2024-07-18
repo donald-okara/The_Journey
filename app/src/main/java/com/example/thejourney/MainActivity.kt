@@ -11,18 +11,15 @@ import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.thejourney.presentation.home.HomeScreen
 import com.example.thejourney.presentation.profile.ProfileScreen
 import com.example.thejourney.presentation.sign_in.EmailSignInScreen
 import com.example.thejourney.presentation.sign_in.EmailSignUpScreen
@@ -49,7 +46,7 @@ class MainActivity : ComponentActivity() {
         val viewModel = SignInViewModel()
 
         // Determine the start destination
-        val startDestination = if (viewModel.getSignedInUser() != null) "profile" else "welcome"
+        val startDestination = if (viewModel.getSignedInUser() != null) "home" else "welcome"
 
         setContent {
             TheJourneyTheme {
@@ -82,7 +79,7 @@ class MainActivity : ComponentActivity() {
                                         Toast.LENGTH_LONG
                                     ).show()
 
-                                    navController.navigate("profile") {
+                                    navController.navigate("home") {
                                         popUpTo("welcome") { inclusive = true }
                                     }
                                     viewModel.resetState()
@@ -154,6 +151,12 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
                             )
+                        }
+
+                        composable("home") {
+                            HomeScreen(
+                                signInViewModel = SignInViewModel(),
+                                onNavigateToProfile = {navController.navigate("profile") })
                         }
                     }
                 }

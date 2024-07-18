@@ -14,6 +14,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.tasks.await
+import kotlin.reflect.full.memberProperties
+import kotlin.reflect.jvm.isAccessible
 
 class GoogleAuthUiClient(
     private val context : android.content.Context,
@@ -22,12 +24,12 @@ class GoogleAuthUiClient(
     private val auth = Firebase.auth
     private val firestore = FirebaseFirestore.getInstance()
 
-    suspend fun signIn() : IntentSender? {
+    suspend fun signIn(): IntentSender? {
         val result = try {
             oneTapClient.beginSignIn(
                 buildSignInRequest()
             ).await()
-        }catch (e : Exception){
+        } catch (e: Exception) {
             e.printStackTrace()
             if (e is CancellationException) throw e
             null
@@ -35,14 +37,21 @@ class GoogleAuthUiClient(
         return result?.pendingIntent?.intentSender
     }
 
-    suspend fun getSignInWithIntent(intent : Intent): SignInResult {
+    suspend fun getSignInWithIntent(intent: Intent): SignInResult {
         val credential = oneTapClient.getSignInCredentialFromIntent(intent)
         val googleIdToken = credential.googleIdToken
-        val googleCredentials = GoogleAuthProvider.getCredential(googleIdToken , null)
+        val googleCredentials = GoogleAuthProvider.getCredential(googleIdToken, null)
 
         return try {
             val user = auth.signInWithCredential(googleCredentials).await().user
-            addToFirestore(user)
+
+            user?.let {
+                try {
+                    updateFirestoreUser(it)
+                } catch (e: Exception) {
+                    Log.e("GoogleAuthUiClient", "Error adding/updating user in Firestore: ${e.message}", e)
+                }
+            }
 
             SignInResult(
                 data = user?.run {
@@ -59,8 +68,7 @@ class GoogleAuthUiClient(
                 },
                 errorMessage = null
             )
-        }
-        catch (e : Exception){
+        } catch (e: Exception) {
             e.printStackTrace()
             if (e is CancellationException) throw e
             SignInResult(
@@ -70,38 +78,59 @@ class GoogleAuthUiClient(
         }
     }
 
-    private suspend fun addToFirestore(user: FirebaseUser?) {
-        user?.let {
-            val userData = UserData(
-                userId = it.uid,
-                username = it.displayName ?: "Default Username",
-                alias = null,
-                profilePictureUrl = it.photoUrl?.toString(),
-                headerImageUrl = null, // Set default or user-provided value
-                dateOfBirth = null, // Set default or user-provided value
-                biography = null, // Set default or user-provided value
-                biographyBackgroundImageUrl = null // Set default or user-provided value
-            )
-            try {
-                firestore.collection("users").document(it.uid).set(userData).await()
-            } catch (e: Exception) {
-                Log.e("GoogleAuthUiClient", "Error adding user to Firestore: ${e.message}", e)
+    suspend fun signOut() {
+        try {
+            oneTapClient.signOut().await()
+            auth.signOut()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            if (e is CancellationException) throw e
+        }
+    }
+
+    private suspend fun updateFirestoreUser(user: FirebaseUser) {
+        val firestore = FirebaseFirestore.getInstance()
+        val docRef = firestore.collection("users").document(user.uid)
+        val documentSnapshot = docRef.get().await()
+
+        val userData = UserData(
+            userId = user.uid,
+            username = user.displayName,
+            alias = null,
+            profilePictureUrl = user.photoUrl?.toString(),
+            headerImageUrl = null,
+            dateOfBirth = null,
+            biography = null,
+            biographyBackgroundImageUrl = null
+        )
+
+        if (!documentSnapshot.exists()) {
+            // Document doesn't exist, perform initial write
+            docRef.set(userData).await()
+        } else {
+            // Document exists, perform updates as needed (if any)
+            val updates = mutableMapOf<String, Any?>()
+
+            UserData::class.memberProperties.forEach { property ->
+                property.isAccessible = true
+                val fieldName = property.name
+                val fieldValue = property.get(userData)
+
+                if (!documentSnapshot.contains(fieldName)) {
+                    updates[fieldName] = fieldValue
+                }
+            }
+
+            if (updates.isNotEmpty()) {
+                docRef.update(updates).await()
+            } else {
+                Log.d("UpdateFirestore", "No updates necessary for document")
             }
         }
     }
 
-    suspend fun signOut(){
-        try {
-            oneTapClient.signOut().await()
-            auth.signOut()
-        }catch (e: Exception){
-            e.printStackTrace()
-            if(e is CancellationException) throw e
 
-        }
-    }
-
-    fun getSignedInUser() : UserData? = auth.currentUser?.run {
+    fun getSignedInUser(): UserData? = auth.currentUser?.run {
         UserData(
             userId = uid,
             username = displayName,
@@ -114,7 +143,7 @@ class GoogleAuthUiClient(
         )
     }
 
-    private fun buildSignInRequest () : BeginSignInRequest {
+    private fun buildSignInRequest(): BeginSignInRequest {
         return BeginSignInRequest.Builder()
             .setGoogleIdTokenRequestOptions(
                 BeginSignInRequest.GoogleIdTokenRequestOptions.builder()

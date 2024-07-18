@@ -7,6 +7,27 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
 
-class CommunityViewModel {
+class CommunityViewModel : ViewModel() {
+    private val db = FirebaseFirestore.getInstance()
+    private val auth = FirebaseAuth.getInstance()
 
+    fun requestNewCommunity(communityRequest: CommunityRequest) {
+        val userId = auth.currentUser?.uid
+        if (userId != null) {
+            Log.d("CommunityViewModel", "User ID: $userId")
+            Log.d("CommunityViewModel", "Community Request: $communityRequest")
+
+            viewModelScope.launch {
+                db.collection("communityRequests").add(communityRequest)
+                    .addOnSuccessListener {
+                        Log.d("CommunityViewModel", "DocumentSnapshot added with ID: ${it.id}")
+                    }
+                    .addOnFailureListener { e ->
+                        Log.w("CommunityViewModel", "Error adding document", e)
+                    }
+            }
+        } else {
+            Log.e("CommunityViewModel", "User not authenticated")
+        }
+    }
 }

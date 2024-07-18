@@ -46,7 +46,7 @@ fun ProfileScreen(
 
         if (userData?.username != null) {
             Text(
-                text = userData.username,
+                text = userData.username!!,
                 style = MaterialTheme.typography.headlineMedium,
                 textAlign = TextAlign.Center,
                 fontWeight = FontWeight.SemiBold

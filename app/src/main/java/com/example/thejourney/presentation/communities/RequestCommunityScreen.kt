@@ -2,8 +2,10 @@ package com.example.thejourney.presentation.communities
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
@@ -17,7 +19,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun RequestCommunityScreen(viewModel: CommunityViewModel) {
     var name by remember { mutableStateOf("") }
-    var type by remember { mutableStateOf("") }
+    var type by remember { mutableStateOf("Campus") }  // Default type is Campus
 
     Column(
         modifier = Modifier.padding(16.dp),
@@ -28,11 +30,22 @@ fun RequestCommunityScreen(viewModel: CommunityViewModel) {
             onValueChange = { name = it },
             label = { Text("Community Name") }
         )
-        TextField(
-            value = type,
-            onValueChange = { type = it },
-            label = { Text("Community Type") }
-        )
+
+        Text("Community Type")
+        Row {
+            RadioButton(
+                selected = type == "Campus",
+                onClick = { type = "Campus" }
+            )
+            Text(text = "Campus", modifier = Modifier.padding(start = 8.dp))
+
+            RadioButton(
+                selected = type == "Church",
+                onClick = { type = "Church" }
+            )
+            Text(text = "Church", modifier = Modifier.padding(start = 8.dp))
+        }
+
         Button(
             onClick = {
                 val communityRequest = CommunityRequest(

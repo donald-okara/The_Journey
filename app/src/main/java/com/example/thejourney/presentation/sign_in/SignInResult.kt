@@ -9,13 +9,14 @@ data class SignInResult(
 
 data class UserData(
     val userId: String,
-    val username: String?,
-    val alias : String?,
-    val admin : Boolean = false,
-    val campus : String? = null,
-    val profilePictureUrl: String?,
-    val headerImageUrl: String?,
-    val dateOfBirth: Timestamp?, // You can use a specific date format
-    val biography: String?,
-    val biographyBackgroundImageUrl: String?
+    var username: String?,
+    var alias : String?,
+    var admin : Boolean = false,
+    var campus : String? = null,
+    var profilePictureUrl: String?,
+    var headerImageUrl: String?,
+    var dateOfBirth: Timestamp?, // You can use a specific date format
+    var biography: String?,
+    var biographyBackgroundImageUrl: String?
 )
+

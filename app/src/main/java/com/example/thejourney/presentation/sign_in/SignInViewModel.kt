@@ -7,16 +7,44 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import kotlin.reflect.full.memberProperties
+import kotlin.reflect.jvm.isAccessible
 
 class SignInViewModel : ViewModel() {
     private val firebaseAuth: FirebaseAuth = FirebaseAuth.getInstance()
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
+    private val db = FirebaseFirestore.getInstance()
+    private val _isAdmin = MutableStateFlow(false)
+    val isAdmin: StateFlow<Boolean> = _isAdmin
     private val _state = MutableStateFlow(SignInState())
     val state = _state.asStateFlow()
+
+    init {
+        fetchAdminStatus()
+    }
+
+    private fun fetchAdminStatus() {
+        val userId = firebaseAuth.currentUser?.uid
+        if (userId != null) {
+            viewModelScope.launch {
+                db.collection("users").document(userId).get()
+                    .addOnSuccessListener { document ->
+                        if (document != null) {
+                            _isAdmin.value = document.getBoolean("admin") == true
+                        }
+                    }
+                    .addOnFailureListener { exception ->
+                        Log.e("UserViewModel", "Error fetching admin status", exception)
+                        // Set default value for _isAdmin
+                    }
+            }
+        }
+    }
 
     fun onSignInResult(result: SignInResult){
         _state.update {
@@ -40,6 +68,15 @@ class SignInViewModel : ViewModel() {
             try {
                 val result = firebaseAuth.signInWithEmailAndPassword(email, password).await()
                 val user = result.user
+
+                user?.let {
+                    try {
+                        updateFirestoreUser(it)
+                    } catch (e: Exception) {
+                        Log.e("SignInWithEmail", "Error adding/updating user in Firestore: ${e.message}", e)
+                    }
+                }
+
                 _state.update { it.copy(isLoading = false, isSignInSuccessful = user != null) }
             } catch (e: Exception) {
                 _state.update { it.copy(isLoading = false, signInError = e.message) }
@@ -91,23 +128,13 @@ class SignInViewModel : ViewModel() {
         }
     }
 
-    private suspend fun addToFirestore(user: FirebaseUser) {
-        val userData = UserData(
-            userId = user.uid,
-            username = user.displayName ?: "Default Username",
-            alias = null,
-            profilePictureUrl = user.photoUrl?.toString(),
-            headerImageUrl = null, // Set default or user-provided value
-            dateOfBirth = null, // Set default or user-provided value
-            biography = null, // Set default or user-provided value
-            biographyBackgroundImageUrl = null // Set default or user-provided value,
-
-        )
-        try {
-            firestore.collection("users").document(user.uid).set(userData).await()
-        } catch (e: Exception) {
-            Log.e("SignInViewModel", "Error adding user to Firestore: ${e.message}", e)
-            _state.update { it.copy(isLoading = false, signUpError = "Failed to save user data.") }
+    private suspend fun addToFirestore(user: FirebaseUser?) {
+        user?.let {
+            try {
+                updateFirestoreUser(it)
+            } catch (e: Exception) {
+                Log.e("GoogleAuthUiClient", "Error adding/updating user in Firestore: ${e.message}", e)
+            }
         }
     }
 
@@ -126,6 +153,48 @@ class SignInViewModel : ViewModel() {
             )
         }
     }
+
+    private suspend fun updateFirestoreUser(user: FirebaseUser) {
+        val firestore = FirebaseFirestore.getInstance()
+        val docRef = firestore.collection("users").document(user.uid)
+        val documentSnapshot = docRef.get().await()
+
+        val userData = UserData(
+            userId = user.uid,
+            username = user.displayName,
+            alias = null,
+            profilePictureUrl = user.photoUrl?.toString(),
+            headerImageUrl = null,
+            dateOfBirth = null,
+            biography = null,
+            biographyBackgroundImageUrl = null
+        )
+
+        if (!documentSnapshot.exists()) {
+            // Document doesn't exist, perform initial write
+            docRef.set(userData).await()
+        } else {
+            // Document exists, perform updates as needed (if any)
+            val updates = mutableMapOf<String, Any?>()
+
+            UserData::class.memberProperties.forEach { property ->
+                property.isAccessible = true
+                val fieldName = property.name
+                val fieldValue = property.get(userData)
+
+                if (!documentSnapshot.contains(fieldName)) {
+                    updates[fieldName] = fieldValue
+                }
+            }
+
+            if (updates.isNotEmpty()) {
+                docRef.update(updates).await()
+            } else {
+                Log.d("UpdateFirestore", "No updates necessary for document")
+            }
+        }
+    }
+
 
     fun resetState(){
         _state.update { SignInState() }
