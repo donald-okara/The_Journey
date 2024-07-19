@@ -1,4 +1,4 @@
-package com.example.thejourney.presentation.communities
+package com.example.thejourney.presentation.admin
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column

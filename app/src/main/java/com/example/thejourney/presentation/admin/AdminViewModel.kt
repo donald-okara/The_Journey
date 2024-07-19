@@ -1,8 +1,9 @@
-package com.example.thejourney.presentation.communities
+package com.example.thejourney.presentation.admin
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.thejourney.presentation.communities.Community
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -28,7 +29,8 @@ class AdminViewModel : ViewModel() {
                     .addSnapshotListener { snapshots, e ->
                         if (e != null) {
                             Log.w("ApproveCommunity", "Listen failed.", e)
-                            _state.value = CommunityState.Error("Failed to fetch pending requests: ${e.message}")
+                            _state.value =
+                                CommunityState.Error("Failed to fetch pending requests: ${e.message}")
                             return@addSnapshotListener
                         }
 
@@ -46,7 +48,7 @@ class AdminViewModel : ViewModel() {
     fun approveCommunity(request: Community) {
         viewModelScope.launch {
             _state.value = CommunityState.Loading
-            val updatedRequest = request.copy(status = "Approved")
+            val updatedRequest = request.copy(status = "Live")
 
             try {
                 db.collection("communities").document(request.name).set(updatedRequest).await()
