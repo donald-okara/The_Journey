@@ -63,6 +63,7 @@ import kotlinx.coroutines.launch
 fun HomeScreen(
     onNavigateToProfile: () -> Unit,
     onNavigateToAdmin: () -> Unit,
+    signInViewModel: SignInViewModel = SignInViewModel(),
     modifier: Modifier = Modifier
 ) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
@@ -76,7 +77,8 @@ fun HomeScreen(
                 HomeDrawerContent(
                     modifier = Modifier,
                     onNavigateToProfile = { onNavigateToProfile() },
-                    onNavigateToAdmin = { onNavigateToAdmin() }
+                    onNavigateToAdmin = { onNavigateToAdmin() },
+                    signInViewModel = signInViewModel
                 )
             }
         }
@@ -104,7 +106,8 @@ fun HomeScreen(
 fun HomeDrawerContent(
     modifier: Modifier = Modifier,
     onNavigateToProfile: () -> Unit,
-    onNavigateToAdmin: () -> Unit
+    onNavigateToAdmin: () -> Unit,
+    signInViewModel: SignInViewModel
 ){
     Column(
         modifier = modifier
@@ -112,7 +115,6 @@ fun HomeDrawerContent(
             .padding(16.dp),
         horizontalAlignment = Alignment.Start
     ) {
-        val signInViewModel = SignInViewModel()
         val isAdmin by signInViewModel.isAdmin.collectAsState()
 
         DrawerHeader(
