@@ -25,15 +25,16 @@ class CommunityViewModel : ViewModel() {
             Log.d("CommunityViewModel", "Community Request: $communityName")
 
             val community = Community(
-                name = communityName,
+                name = communityName, // Use name as the document ID
                 type = communityType,
                 requestedBy = username
             )
 
             viewModelScope.launch {
-                db.collection("communities").add(community)
+                db.collection("communities").document(communityName) // Use name as the document ID
+                    .set(community)
                     .addOnSuccessListener {
-                        Log.d("CommunityViewModel", "DocumentSnapshot added with ID: ${it.id}")
+                        Log.d("CommunityViewModel", "DocumentSnapshot added with ID: ${communityName}")
                     }
                     .addOnFailureListener { e ->
                         Log.w("CommunityViewModel", "Error adding document", e)

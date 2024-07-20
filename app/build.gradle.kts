@@ -64,12 +64,13 @@ dependencies {
     implementation(libs.firebase.auth)
     implementation(libs.play.services.auth)
 
-    implementation("io.coil-kt:coil-compose:2.4.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3") // Check for the latest version
-    implementation("androidx.navigation:navigation-compose:2.7.5")
-    implementation("androidx.compose.ui:ui:1.3.3")
-    implementation("androidx.compose.material:material:1.3.1")
-    implementation("org.jetbrains.kotlin:kotlin-reflect:1.9.0")
+    implementation(libs.coil.compose)
+    implementation(libs.kotlinx.coroutines.core) // Check for the latest version
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.ui)
+    implementation(libs.androidx.material)
+    implementation(libs.kotlin.reflect)
+    implementation(libs.androidx.material.icons.extended)
     implementation(libs.androidx.lifecycle.runtime.compose.android)
     implementation(libs.androidx.ui.text.google.fonts)
     implementation(libs.firebase.firestore.ktx)

@@ -19,6 +19,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.thejourney.presentation.admin.AdminDashboard
+import com.example.thejourney.presentation.admin.ApproveCommunityScreen
 import com.example.thejourney.presentation.home.HomeScreen
 import com.example.thejourney.presentation.profile.ProfileScreen
 import com.example.thejourney.presentation.sign_in.EmailSignInScreen
@@ -43,10 +45,10 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         // Create SignInViewModel instance
-        val viewModel = SignInViewModel()
+        val signInViewModel = SignInViewModel()
 
         // Determine the start destination
-        val startDestination = if (viewModel.getSignedInUser() != null) "home" else "welcome"
+        val startDestination = if (signInViewModel.getSignedInUser() != null) "home" else "welcome"
 
         setContent {
             TheJourneyTheme {
@@ -55,17 +57,17 @@ class MainActivity : ComponentActivity() {
 
                     NavHost(navController = navController, startDestination = startDestination) {
                         composable("welcome") {
-                            val state by viewModel.state.collectAsStateWithLifecycle()
+                            val state by signInViewModel.state.collectAsStateWithLifecycle()
                             val launcher = rememberLauncherForActivityResult(
                                 contract = ActivityResultContracts.StartIntentSenderForResult(),
                                 onResult = { result ->
-                                    viewModel.setLoading(false)  // Reset loading state when result is received
+                                    signInViewModel.setLoading(false)  // Reset loading state when result is received
                                     if (result.resultCode == RESULT_OK) {
                                         lifecycleScope.launch {
                                             val signInResult = googleAuthUiClient.getSignInWithIntent(
                                                 intent = result.data ?: return@launch
                                             )
-                                            viewModel.onSignInResult(signInResult)
+                                            signInViewModel.onSignInResult(signInResult)
                                         }
                                     }
                                 }
@@ -82,7 +84,7 @@ class MainActivity : ComponentActivity() {
                                     navController.navigate("home") {
                                         popUpTo("welcome") { inclusive = true }
                                     }
-                                    viewModel.resetState()
+                                    signInViewModel.resetState()
                                 }
 
                             }
@@ -91,7 +93,7 @@ class MainActivity : ComponentActivity() {
                                 state = state,
                                 onSignInWithGoogle = {
                                     lifecycleScope.launch {
-                                        viewModel.setLoading(true) // Set loading state to true when sign-in starts
+                                        signInViewModel.setLoading(true) // Set loading state to true when sign-in starts
                                         val signInIntentSender = googleAuthUiClient.signIn()
                                         launcher.launch(
                                             IntentSenderRequest.Builder(
@@ -110,24 +112,24 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable("emailSignIn") {
-                            val state by viewModel.state.collectAsStateWithLifecycle()
+                            val state by signInViewModel.state.collectAsStateWithLifecycle()
 
                             EmailSignInScreen(
                                 state = state,
                                 onSignInWithEmail = { email, password ->
-                                    viewModel.signInWithEmail(email, password)
+                                    signInViewModel.signInWithEmail(email, password)
                                 },
                                 onNavigateToSignUp = { navController.navigate("emailSignUp") }
                             )
                         }
 
                         composable("emailSignUp") {
-                            val state by viewModel.state.collectAsStateWithLifecycle()
+                            val state by signInViewModel.state.collectAsStateWithLifecycle()
 
                             EmailSignUpScreen(
                                 state = state,
                                 onSignUpWithEmail = { email, password ->
-                                    viewModel.signUpWithEmail(email, password)
+                                    signInViewModel.signUpWithEmail(email, password)
                                 },
                                 onNavigateToSignIn = { navController.navigate("emailSignIn") }
                             )
@@ -135,7 +137,7 @@ class MainActivity : ComponentActivity() {
 
                         composable("profile") {
                             ProfileScreen(
-                                userData = viewModel.getSignedInUser(),
+                                userData = signInViewModel.getSignedInUser(),
                                 onSignOut = {
                                     lifecycleScope.launch {
                                         googleAuthUiClient.signOut()
@@ -155,8 +157,18 @@ class MainActivity : ComponentActivity() {
 
                         composable("home") {
                             HomeScreen(
-                                signInViewModel = SignInViewModel(),
-                                onNavigateToProfile = {navController.navigate("profile") })
+                                onNavigateToProfile = {navController.navigate("profile") },
+                                onNavigateToAdmin = { navController.navigate("admin_console") })
+                        }
+
+                        composable("admin_console") {
+                            AdminDashboard(
+                                onNavigateToCommunities = { navController.navigate("approve_community_screen") }
+                            )
+                        }
+
+                        composable("approve_community_screen") {
+                            ApproveCommunityScreen()
                         }
                     }
                 }

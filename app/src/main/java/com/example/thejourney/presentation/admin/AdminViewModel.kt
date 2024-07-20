@@ -10,67 +10,120 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
-
 class AdminViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
-    private val _state = MutableStateFlow<CommunityState>(CommunityState.Loading)
-    val state: StateFlow<CommunityState> = _state
+
+    private val _pendingState = MutableStateFlow<CommunityState>(CommunityState.Loading)
+    val pendingState: StateFlow<CommunityState> = _pendingState
+
+    private val _liveState = MutableStateFlow<CommunityState>(CommunityState.Loading)
+    val liveState: StateFlow<CommunityState> = _liveState
+
+    private val _rejectedState = MutableStateFlow<CommunityState>(CommunityState.Loading)
+    val rejectedState: StateFlow<CommunityState> = _rejectedState
 
     init {
         fetchPendingRequests()
+        fetchLiveCommunities()
+        fetchRejectedCommunities()
     }
 
     private fun fetchPendingRequests() {
-        try {
-            viewModelScope.launch {
-                _state.value = CommunityState.Loading
-                db.collection("communities")
-                    .whereEqualTo("status", "Pending")
-                    .addSnapshotListener { snapshots, e ->
-                        if (e != null) {
-                            Log.w("ApproveCommunity", "Listen failed.", e)
-                            _state.value =
-                                CommunityState.Error("Failed to fetch pending requests: ${e.message}")
-                            return@addSnapshotListener
-                        }
-
-                        val requests = snapshots?.documents?.mapNotNull { it.toObject(Community::class.java) }
-                        _state.value = CommunityState.Success(requests ?: emptyList())
+        viewModelScope.launch {
+            _pendingState.value = CommunityState.Loading
+            db.collection("communities")
+                .whereEqualTo("status", "Pending")
+                .addSnapshotListener { snapshots, e ->
+                    if (e != null) {
+                        _pendingState.value = CommunityState.Error("Failed to fetch pending requests: ${e.message}")
+                        return@addSnapshotListener
                     }
-            }
-        } catch (e: Exception) {
-            Log.w("ApproveCommunity", "Error fetching pending requests", e)
-            _state.value = CommunityState.Error("Error fetching pending requests: ${e.message}")
-            TODO("Not yet implemented")
+                    val requests = snapshots?.documents?.mapNotNull { it.toObject(Community::class.java) }
+                    _pendingState.value = CommunityState.Success(requests ?: emptyList())
+                }
+        }
+    }
+
+    private fun fetchLiveCommunities() {
+        viewModelScope.launch {
+            _liveState.value = CommunityState.Loading
+            db.collection("communities")
+                .whereEqualTo("status", "Live")
+                .addSnapshotListener { snapshots, e ->
+                    if (e != null) {
+                        _liveState.value = CommunityState.Error("Failed to fetch live communities: ${e.message}")
+                        return@addSnapshotListener
+                    }
+                    val communities = snapshots?.documents?.mapNotNull { it.toObject(Community::class.java) }
+                    _liveState.value = CommunityState.Success(communities ?: emptyList())
+                }
+        }
+    }
+
+    private fun fetchRejectedCommunities() {
+        viewModelScope.launch {
+            _rejectedState.value = CommunityState.Loading
+            db.collection("communities")
+                .whereEqualTo("status", "Rejected")
+                .addSnapshotListener { snapshots, e ->
+                    if (e != null) {
+                        _rejectedState.value = CommunityState.Error("Failed to fetch rejected communities: ${e.message}")
+                        return@addSnapshotListener
+                    }
+                    val communities = snapshots?.documents?.mapNotNull { it.toObject(Community::class.java) }
+                    _rejectedState.value = CommunityState.Success(communities ?: emptyList())
+                }
         }
     }
 
     fun approveCommunity(request: Community) {
         viewModelScope.launch {
-            _state.value = CommunityState.Loading
-            val updatedRequest = request.copy(status = "Live")
-
             try {
-                db.collection("communities").document(request.name).set(updatedRequest).await()
-                _state.value = CommunityState.Success(listOf(updatedRequest))
+                Log.d("ApproveCommunity", "Attempting to update document with ID: ${request.name}")
+
+                _pendingState.value = CommunityState.Loading
+
+                db.collection("communities").document(request.name)
+                    .update("status", "Live")
+                    .await()
+
+                val currentPendingState = _pendingState.value
+                if (currentPendingState is CommunityState.Success) {
+                    _pendingState.value = CommunityState.Success(
+                        currentPendingState.communities.filter { it.name != request.name }
+                    )
+                }
+
+                fetchLiveCommunities()
             } catch (e: Exception) {
                 Log.w("ApproveCommunity", "Error updating document", e)
-                _state.value = CommunityState.Error("Error updating document: ${e.message}")
+                _pendingState.value = CommunityState.Error("Error updating document: ${e.message}")
             }
         }
     }
 
     fun rejectCommunity(request: Community) {
         viewModelScope.launch {
-            _state.value = CommunityState.Loading
-            val updatedRequest = request.copy(status = "Rejected")
-
             try {
-                db.collection("communities").document(request.name).set(updatedRequest).await()
-                _state.value = CommunityState.Success(listOf(updatedRequest))
+                Log.d("RejectCommunity", "Attempting to update document with ID: ${request.name}")
+
+                _pendingState.value = CommunityState.Loading
+
+                db.collection("communities").document(request.name)
+                    .update("status", "Rejected")
+                    .await()
+
+                val currentPendingState = _pendingState.value
+                if (currentPendingState is CommunityState.Success) {
+                    _pendingState.value = CommunityState.Success(
+                        currentPendingState.communities.filter { it.name != request.name }
+                    )
+                }
+
+                fetchRejectedCommunities()
             } catch (e: Exception) {
                 Log.w("RejectCommunity", "Error updating document", e)
-                _state.value = CommunityState.Error("Error updating document: ${e.message}")
+                _pendingState.value = CommunityState.Error("Error updating document: ${e.message}")
             }
         }
     }
