@@ -3,7 +3,7 @@ package com.example.thejourney.presentation.admin
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.thejourney.presentation.communities.Community
+import com.example.thejourney.presentation.communities.model.Community
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

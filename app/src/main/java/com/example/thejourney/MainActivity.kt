@@ -163,12 +163,15 @@ class MainActivity : ComponentActivity() {
 
                         composable("admin_console") {
                             AdminDashboard(
-                                onNavigateToCommunities = { navController.navigate("approve_community_screen") }
+                                onNavigateToCommunities = { navController.navigate("approve_community_screen") },
+                                navigateBack = {navController.popBackStack()}
                             )
                         }
 
                         composable("approve_community_screen") {
-                            ApproveCommunityScreen()
+                            ApproveCommunityScreen(
+                                navigateBack = {navController.popBackStack()}
+                            )
                         }
                     }
                 }

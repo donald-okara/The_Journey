@@ -63,7 +63,8 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
     implementation(libs.play.services.auth)
-
+    implementation(libs.google.accompanist.pager)
+    implementation(libs.accompanist.pager.indicators)
     implementation(libs.coil.compose)
     implementation(libs.kotlinx.coroutines.core) // Check for the latest version
     implementation(libs.androidx.navigation.compose)

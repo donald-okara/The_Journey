@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DrawerValue
@@ -123,6 +124,11 @@ fun HomeDrawerContent(
         )
 
         HorizontalDivider()
+        DrawerItem(
+            itemIcon = Icons.Outlined.Groups,
+            label = R.string.communities,
+            modifier = modifier.clickable { TODO() }
+        )
 
         if (isAdmin){
             DrawerItem(
@@ -183,10 +189,6 @@ fun DrawerItem(
     Row(
         modifier
             .fillMaxWidth()
-            .padding(
-                horizontal = 16.dp,
-                vertical = 12.dp
-            )
             .height(56.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Start
@@ -221,7 +223,8 @@ fun HomeTopBar(
             Image(
                 painter = painterResource(id = R.mipmap.ic_launcher_foreground),
                 contentDescription = null,
-                modifier.clickable { TODO() }
+                modifier
+                    .clickable { TODO() }
                     .fillMaxHeight()
                 )
         },
