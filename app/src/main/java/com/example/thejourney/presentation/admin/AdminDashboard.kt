@@ -36,7 +36,7 @@ fun AdminDashboard(
                   IconButton(onClick = { navigateBack() }) {
                       Icon(
                           imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                          contentDescription = "Open drawer"
+                          contentDescription = "Pop Back"
                       )
                   }
               }

@@ -19,8 +19,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.thejourney.presentation.admin.AdminCommunityView
 import com.example.thejourney.presentation.admin.AdminDashboard
-import com.example.thejourney.presentation.admin.ApproveCommunityScreen
+import com.example.thejourney.presentation.communities.CommunitiesScreen
 import com.example.thejourney.presentation.home.HomeScreen
 import com.example.thejourney.presentation.profile.ProfileScreen
 import com.example.thejourney.presentation.sign_in.EmailSignInScreen
@@ -158,7 +159,9 @@ class MainActivity : ComponentActivity() {
                         composable("home") {
                             HomeScreen(
                                 onNavigateToProfile = {navController.navigate("profile") },
-                                onNavigateToAdmin = { navController.navigate("admin_console") })
+                                onNavigateToAdmin = { navController.navigate("admin_console") },
+                                navigateToCommunities = {navController.navigate("community_list")}
+                            )
                         }
 
                         composable("admin_console") {
@@ -169,7 +172,13 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable("approve_community_screen") {
-                            ApproveCommunityScreen(
+                            AdminCommunityView(
+                                navigateBack = {navController.popBackStack()}
+                            )
+                        }
+
+                        composable("community_list"){
+                            CommunitiesScreen(
                                 navigateBack = {navController.popBackStack()}
                             )
                         }

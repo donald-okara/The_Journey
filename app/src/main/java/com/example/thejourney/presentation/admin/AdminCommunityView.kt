@@ -25,12 +25,12 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ApproveCommunityScreen(
+fun AdminCommunityView(
     viewModel: AdminViewModel = AdminViewModel(),
     navigateBack : () -> Unit
 ) {
-
-    Scaffold (topBar = {
+    Scaffold (
+        topBar = {
         CenterAlignedTopAppBar(
             title = {
                 Text(
@@ -42,7 +42,7 @@ fun ApproveCommunityScreen(
                 IconButton(onClick = { navigateBack() }) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Open drawer"
+                        contentDescription = "Pop Back"
                     )
                 }
             }
@@ -51,7 +51,7 @@ fun ApproveCommunityScreen(
     },
     modifier = Modifier.fillMaxSize()
     ) {innerPadding->
-        CommunityScreenContent(
+        AdminCommunityViewContent(
             modifier = Modifier.padding(innerPadding),
             viewModel = viewModel
         )
@@ -61,7 +61,7 @@ fun ApproveCommunityScreen(
 
 @OptIn(ExperimentalPagerApi::class)
 @Composable
-fun CommunityScreenContent(
+fun AdminCommunityViewContent(
     modifier: Modifier = Modifier,
     viewModel: AdminViewModel
 ){

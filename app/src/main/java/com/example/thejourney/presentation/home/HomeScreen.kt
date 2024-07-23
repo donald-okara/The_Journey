@@ -64,6 +64,7 @@ import kotlinx.coroutines.launch
 fun HomeScreen(
     onNavigateToProfile: () -> Unit,
     onNavigateToAdmin: () -> Unit,
+    navigateToCommunities: () -> Unit,
     signInViewModel: SignInViewModel = SignInViewModel(),
     modifier: Modifier = Modifier
 ) {
@@ -79,6 +80,7 @@ fun HomeScreen(
                     modifier = Modifier,
                     onNavigateToProfile = { onNavigateToProfile() },
                     onNavigateToAdmin = { onNavigateToAdmin() },
+                    navigateToCommunities = navigateToCommunities,
                     signInViewModel = signInViewModel
                 )
             }
@@ -108,7 +110,8 @@ fun HomeDrawerContent(
     modifier: Modifier = Modifier,
     onNavigateToProfile: () -> Unit,
     onNavigateToAdmin: () -> Unit,
-    signInViewModel: SignInViewModel
+    navigateToCommunities: () -> Unit,
+    signInViewModel: SignInViewModel,
 ){
     Column(
         modifier = modifier
@@ -123,11 +126,16 @@ fun HomeDrawerContent(
             modifier = modifier.clickable { onNavigateToProfile() }
         )
 
+        Spacer(modifier = modifier.height(16.dp))
+
         HorizontalDivider()
+
+        Spacer(modifier = modifier.height(16.dp))
+
         DrawerItem(
             itemIcon = Icons.Outlined.Groups,
             label = R.string.communities,
-            modifier = modifier.clickable { TODO() }
+            modifier = modifier.clickable { navigateToCommunities() }
         )
 
         if (isAdmin){
@@ -145,13 +153,16 @@ fun DrawerHeader(
     modifier: Modifier = Modifier,
     userData: UserData?
 ) {
-    Column {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Start,
+    ) {
         if (userData?.profilePictureUrl != null) {
             AsyncImage(
                 model = userData.profilePictureUrl,
                 contentDescription = "Profile picture",
                 modifier
-                    .size(128.dp)
+                    .size(64.dp)
                     .clip(CircleShape),
                 contentScale = ContentScale.Crop
             )
@@ -165,7 +176,7 @@ fun DrawerHeader(
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.width(16.dp))
 
         if (userData?.username != null) {
             Text(
