@@ -75,6 +75,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose.android)
     implementation(libs.androidx.ui.text.google.fonts)
     implementation(libs.firebase.firestore.ktx)
+    implementation(libs.firebase.storage.ktx) // Check for the latest version
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

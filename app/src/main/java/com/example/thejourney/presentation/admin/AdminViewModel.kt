@@ -1,6 +1,8 @@
 package com.example.thejourney.presentation.admin
 
 import android.util.Log
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.thejourney.presentation.communities.model.Community
@@ -21,12 +23,14 @@ class AdminViewModel : ViewModel() {
 
     private val _rejectedState = MutableStateFlow<CommunityState>(CommunityState.Loading)
     val rejectedState: StateFlow<CommunityState> = _rejectedState
+    val pendingCount = mutableIntStateOf(0)
 
     init {
         fetchPendingRequests()
         fetchLiveCommunities()
         fetchRejectedCommunities()
     }
+
 
     private fun fetchPendingRequests() {
         viewModelScope.launch {
@@ -40,6 +44,9 @@ class AdminViewModel : ViewModel() {
                     }
                     val requests = snapshots?.documents?.mapNotNull { it.toObject(Community::class.java) }
                     _pendingState.value = CommunityState.Success(requests ?: emptyList())
+                    if (requests != null) {
+                        pendingCount.intValue = requests.size
+                    } // Update count based on the list size
                 }
         }
     }
@@ -79,25 +86,18 @@ class AdminViewModel : ViewModel() {
     fun approveCommunity(request: Community) {
         viewModelScope.launch {
             try {
-                Log.d("ApproveCommunity", "Attempting to update document with ID: ${request.name}")
-
-                _pendingState.value = CommunityState.Loading
+                Log.d("AdminViewModel", "Attempting to approve community with ID: ${request.name}")
 
                 db.collection("communities").document(request.name)
                     .update("status", "Live")
                     .await()
 
-                val currentPendingState = _pendingState.value
-                if (currentPendingState is CommunityState.Success) {
-                    _pendingState.value = CommunityState.Success(
-                        currentPendingState.communities.filter { it.name != request.name }
-                    )
-                }
-
+                // Refresh the live and pending states
+                fetchPendingRequests()
                 fetchLiveCommunities()
             } catch (e: Exception) {
-                Log.w("ApproveCommunity", "Error updating document", e)
-                _pendingState.value = CommunityState.Error("Error updating document: ${e.message}")
+                Log.w("AdminViewModel", "Error approving community", e)
+                _pendingState.value = CommunityState.Error("Error approving community: ${e.message}")
             }
         }
     }
@@ -105,32 +105,25 @@ class AdminViewModel : ViewModel() {
     fun rejectCommunity(request: Community) {
         viewModelScope.launch {
             try {
-                Log.d("RejectCommunity", "Attempting to update document with ID: ${request.name}")
-
-                _pendingState.value = CommunityState.Loading
+                Log.d("AdminViewModel", "Attempting to reject community with ID: ${request.name}")
 
                 db.collection("communities").document(request.name)
                     .update("status", "Rejected")
                     .await()
 
-                val currentPendingState = _pendingState.value
-                if (currentPendingState is CommunityState.Success) {
-                    _pendingState.value = CommunityState.Success(
-                        currentPendingState.communities.filter { it.name != request.name }
-                    )
-                }
-
+                // Refresh the rejected and pending states
+                fetchPendingRequests()
                 fetchRejectedCommunities()
             } catch (e: Exception) {
-                Log.w("RejectCommunity", "Error updating document", e)
-                _pendingState.value = CommunityState.Error("Error updating document: ${e.message}")
+                Log.w("AdminViewModel", "Error rejecting community", e)
+                _pendingState.value = CommunityState.Error("Error rejecting community: ${e.message}")
             }
         }
     }
 }
 
 sealed class CommunityState {
-    data object Loading : CommunityState()
+    object Loading : CommunityState()
     data class Success(val communities: List<Community>) : CommunityState()
     data class Error(val message: String) : CommunityState()
 }

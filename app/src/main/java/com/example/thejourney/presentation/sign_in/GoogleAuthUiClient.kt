@@ -63,7 +63,8 @@ class GoogleAuthUiClient(
                         headerImageUrl = null,
                         dateOfBirth = null,
                         biography = null,
-                        biographyBackgroundImageUrl = null
+                        biographyBackgroundImageUrl = null,
+                        communities = emptyList()
                     )
                 },
                 errorMessage = null
@@ -101,7 +102,8 @@ class GoogleAuthUiClient(
             headerImageUrl = null,
             dateOfBirth = null,
             biography = null,
-            biographyBackgroundImageUrl = null
+            biographyBackgroundImageUrl = null,
+            communities = emptyList()
         )
 
         if (!documentSnapshot.exists()) {
@@ -139,7 +141,8 @@ class GoogleAuthUiClient(
             headerImageUrl = null,
             dateOfBirth = null,
             biography = null,
-            biographyBackgroundImageUrl = null
+            biographyBackgroundImageUrl = null,
+            communities = emptyList()
         )
     }
 

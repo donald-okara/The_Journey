@@ -10,6 +10,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.GroupAdd
+import androidx.compose.material.icons.filled.GroupWork
 import androidx.compose.material3.Card
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
@@ -36,7 +38,8 @@ import com.example.thejourney.ui.theme.TheJourneyTheme
 @Composable
 fun CommunitiesScreen(
     adminViewModel: AdminViewModel = viewModel(),
-    navigateBack: () -> Unit
+    navigateBack: () -> Unit,
+    navigateToAddCommunity: () -> Unit
 ) {
     Scaffold (
         topBar = {
@@ -51,7 +54,16 @@ fun CommunitiesScreen(
                     IconButton(onClick = { navigateBack() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Open drawer"
+                            contentDescription = "Go back"
+                        )
+                    }
+                },
+
+                actions = {
+                    IconButton(onClick = { navigateToAddCommunity() }) {
+                        Icon(
+                            imageVector = Icons.Filled.GroupWork,
+                            contentDescription = "Add group"
                         )
                     }
                 }
@@ -123,7 +135,7 @@ fun CommunityItem(community: Community) {
                 Spacer(modifier = Modifier.weight(1f))
                 Text(text = community.type, style = MaterialTheme.typography.bodyMedium)
             }
-            Text(text = "Leader: ${community.requestedBy}", style = MaterialTheme.typography.bodyMedium)
+            //Text(text = "Leader: ${community.requestedBy}", style = MaterialTheme.typography.bodyMedium)
         }
     }
 }

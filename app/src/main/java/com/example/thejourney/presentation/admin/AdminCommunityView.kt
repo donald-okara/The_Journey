@@ -15,13 +15,6 @@ import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
 import kotlinx.coroutines.launch
 
-//@OptIn(ExperimentalPagerApi::class)
-//@Composable
-//fun ApproveCommunityScreen(
-//    viewModel: AdminViewModel = AdminViewModel()
-//) {
-
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,6 +61,7 @@ fun AdminCommunityViewContent(
     val pendingState by viewModel.pendingState.collectAsState()
     val liveState by viewModel.liveState.collectAsState()
     val rejectedState by viewModel.rejectedState.collectAsState()
+    val pendingCount by remember { viewModel.pendingCount }
 
     val pagerState = rememberPagerState()
     val coroutineScope = rememberCoroutineScope()
@@ -80,15 +74,37 @@ fun AdminCommunityViewContent(
     ) {
         TabRow(selectedTabIndex = pagerState.currentPage) {
             tabs.forEachIndexed { index, title ->
-                Tab(
-                    selected = pagerState.currentPage == index,
-                    onClick = {
-                        coroutineScope.launch {
-                            pagerState.animateScrollToPage(index)
+                if (index == 1) {
+                    BadgedBox(
+                        badge = {
+                            if (pendingCount > 0){
+                                Badge {
+                                    Text("$pendingCount")
+                                }
+                            }
                         }
-                    },
-                    text = { Text(title) }
-                )
+                    ){
+                        Tab(
+                            selected = pagerState.currentPage == index,
+                            onClick = {
+                                coroutineScope.launch {
+                                    pagerState.animateScrollToPage(index)
+                                }
+                            },
+                            text = { Text(title) }
+                        )
+                    }
+                }else{
+                    Tab(
+                        selected = pagerState.currentPage == index,
+                        onClick = {
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(index)
+                            }
+                        },
+                        text = { Text(title) }
+                    )
+                }
             }
         }
         HorizontalPager(
@@ -124,7 +140,7 @@ fun CommunityList(state: CommunityState, viewModel: AdminViewModel? = null) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text("Name: ${request.name}")
                             Text("Type: ${request.type}")
-                            Text("Requested By: ${request.requestedBy}")
+                            //Text("Requested By: ${request.requestedBy}")
                             Text("Status: ${request.status}")
 
                             if (viewModel != null) { // Only show buttons if viewModel is passed

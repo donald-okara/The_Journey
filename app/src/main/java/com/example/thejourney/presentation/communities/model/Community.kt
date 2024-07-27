@@ -1,3 +1,4 @@
+
 package com.example.thejourney.presentation.communities.model
 
 import com.google.firebase.firestore.PropertyName
@@ -12,14 +13,22 @@ data class Community(
     @set:PropertyName("type")
     var type: String = "",
 
-    @get:PropertyName("requestedBy")
-    @set:PropertyName("requestedBy")
-    var requestedBy: String = "",
+    @get:PropertyName("members")
+    @set:PropertyName("members")
+    var members: List<Map<String /*userId*/, String /*role*/>> = emptyList(),
+
 
     @get:PropertyName("status")
     @set:PropertyName("status")
-    var status: String = "Pending"
+    var status: String = "Pending",
+
+    @get:PropertyName("communityBannerUrl")
+    @set:PropertyName("communityBannerUrl")
+    var communityBannerUrl: String? = null,
+
+    @get:PropertyName("profileUrl")
+    @set:PropertyName("profileUrl")
+    var profileUrl: String? = null
 ) {
-    // Default no-argument constructor required by Firestore
-    constructor() : this("", "", "", "")
+    constructor() : this("", "", emptyList(), "", null, null)
 }

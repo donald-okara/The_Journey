@@ -22,6 +22,8 @@ import androidx.navigation.compose.rememberNavController
 import com.example.thejourney.presentation.admin.AdminCommunityView
 import com.example.thejourney.presentation.admin.AdminDashboard
 import com.example.thejourney.presentation.communities.CommunitiesScreen
+import com.example.thejourney.presentation.communities.CommunityViewModel
+import com.example.thejourney.presentation.communities.RequestCommunityScreen
 import com.example.thejourney.presentation.home.HomeScreen
 import com.example.thejourney.presentation.profile.ProfileScreen
 import com.example.thejourney.presentation.sign_in.EmailSignInScreen
@@ -179,7 +181,14 @@ class MainActivity : ComponentActivity() {
 
                         composable("community_list"){
                             CommunitiesScreen(
-                                navigateBack = {navController.popBackStack()}
+                                navigateBack = {navController.popBackStack()},
+                                navigateToAddCommunity = {navController.navigate("request_community")}
+                            )
+                        }
+
+                        composable("request_community"){
+                            RequestCommunityScreen(
+                                navigateBack = {navController.popBackStack()},
                             )
                         }
                     }

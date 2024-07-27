@@ -149,7 +149,9 @@ class SignInViewModel : ViewModel() {
                 headerImageUrl = null,
                 dateOfBirth = null,
                 biography = null,
-                biographyBackgroundImageUrl = null
+                biographyBackgroundImageUrl = null,
+                communities = emptyList()
+
             )
         }
     }
@@ -167,7 +169,8 @@ class SignInViewModel : ViewModel() {
             headerImageUrl = null,
             dateOfBirth = null,
             biography = null,
-            biographyBackgroundImageUrl = null
+            biographyBackgroundImageUrl = null,
+            communities = emptyList()
         )
 
         if (!documentSnapshot.exists()) {
