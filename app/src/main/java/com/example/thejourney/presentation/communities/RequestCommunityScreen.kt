@@ -19,19 +19,17 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.Chip
-import androidx.compose.material.ChipDefaults
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -39,6 +37,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.InputChip
+import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.RadioButton
@@ -59,6 +59,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import com.example.thejourney.presentation.sign_in.UserData
@@ -324,42 +325,25 @@ fun CommunityRequestForm(
             modifier = Modifier.fillMaxWidth()
         ) {
             selectedLeaders.forEach { user ->
-                Chip(
-                    colors = ChipDefaults.chipColors(
-                        backgroundColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    ),
-                    onClick = {
-                    /* Handle chip click if needed */
-                        onLeadersChanged(selectedLeaders.filter { it != user })
-                    },
-                    modifier = Modifier.weight(1f)
+                UserInputChip(user = user, onRemove = { onLeadersChanged(selectedLeaders.filter { it != user }) })
+            }
+            Button(
+                onClick = { onAddLeader() }
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Start
-                    ) {
-                        if (user.profilePictureUrl != null) {
-                            Image(
-                                painter = rememberAsyncImagePainter(user.profilePictureUrl),
-                                contentDescription = null,
-                                modifier = Modifier.size(24.dp).clip(CircleShape)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = user.username ?: "Unknown")
-                    }
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = "Add Leader"
+                    )
+                    Text("Add Leader")
                 }
             }
-            Chip(
-                colors = ChipDefaults.chipColors(
-                backgroundColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-            ),
-                onClick = { onAddLeader() }) {
-                Text("Add Leader")
-            }
         }
+
+        HorizontalDivider()
 
         // Chips for Editors
         Row(
@@ -367,43 +351,22 @@ fun CommunityRequestForm(
             modifier = Modifier.fillMaxWidth()
         ) {
             selectedEditors.forEach { user ->
+                UserInputChip(user = user, onRemove = { onEditorsChanged(selectedEditors.filter { it != user }) })
 
-                Chip(
-                    colors = ChipDefaults.chipColors(
-                        backgroundColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    ),
-                    onClick = {
-                    /* Handle chip click if needed */
-                        onEditorsChanged(selectedEditors.filter { it != user })
-
-                    },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Start
-                    ) {
-                        if (user.profilePictureUrl != null) {
-                            Image(
-                                painter = rememberAsyncImagePainter(user.profilePictureUrl),
-                                contentDescription = null,
-                                modifier = Modifier.size(24.dp).clip(CircleShape)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = user.username ?: "Unknown")
-                    }
-                }
             }
-            Chip(
-                colors = ChipDefaults.chipColors(
-                    backgroundColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                ),
+            Button(
                 onClick = { onAddEditor() }
             ) {
-                Text("Add Editor")
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = "Add Editor"
+                    )
+                    Text("Add Editor")
+                }
             }
         }
 
@@ -475,7 +438,8 @@ fun UserItem(user: UserData, onUserSelected: (UserData) -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
-        modifier = Modifier.clickable { onUserSelected(user) }
+        modifier = Modifier
+            .clickable { onUserSelected(user) }
             .padding(16.dp)
     ) {
         if (user.profilePictureUrl != null) {
@@ -494,3 +458,54 @@ fun UserItem(user: UserData, onUserSelected: (UserData) -> Unit) {
         )
     }
 }
+
+
+@Composable
+fun UserInputChip(
+    modifier: Modifier = Modifier,
+    user: UserData,
+    onRemove: (UserData) -> Unit
+) {
+    val displayName = user.username?.take(3) ?: "Unknown"
+
+    InputChip(
+        selected = false,
+        onClick = { onRemove(user) },
+        label = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Image(
+                    painter = rememberAsyncImagePainter(
+                        model = user.profilePictureUrl,
+                    ),
+                    contentDescription = user.username,
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(CircleShape),
+                    contentScale = ContentScale.Crop
+                )
+                Text(
+                    text = displayName,
+                )
+            }
+        },
+        trailingIcon = {
+            IconButton(onClick = { onRemove(user) }) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Remove",
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+        },
+        colors = InputChipDefaults.inputChipColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            labelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            trailingIconColor = MaterialTheme.colorScheme.onPrimaryContainer
+        )
+    )
+}
+
+
