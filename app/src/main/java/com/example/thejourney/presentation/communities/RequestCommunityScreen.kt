@@ -11,6 +11,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -118,6 +120,8 @@ fun RequestCommunityScreen(
                 viewModel = viewModel,
                 onDismiss = { showBottomSheet = false },
                 roleToAdd = roleToAdd, // Pass the role to add
+                selectedLeaders = selectedLeaders,
+                selectedEditors = selectedEditors,
                 onUserSelected = { user ->
                     when (roleToAdd) {
                         "Leader" -> {
@@ -139,7 +143,7 @@ fun RequestCommunityScreen(
 
 
 
-@OptIn(ExperimentalMaterialApi::class)
+@OptIn(ExperimentalMaterialApi::class, ExperimentalLayoutApi::class)
 @Composable
 fun CommunityRequestForm(
     modifier: Modifier = Modifier,
@@ -320,7 +324,7 @@ fun CommunityRequestForm(
         HorizontalDivider()
 
         // Chips for Leaders
-        Row(
+        FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -346,7 +350,7 @@ fun CommunityRequestForm(
         HorizontalDivider()
 
         // Chips for Editors
-        Row(
+        FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -414,18 +418,22 @@ fun CommunityRequestForm(
 fun UserSelectionBottomSheet(
     viewModel: CommunityViewModel,
     onDismiss: () -> Unit,
+    selectedLeaders: List<UserData>,
+    selectedEditors: List<UserData>,
     roleToAdd: String, // Pass the role to add
     onUserSelected: (UserData) -> Unit
 ) {
+    val coroutineScope = rememberCoroutineScope()
     val users by viewModel.users.collectAsState(emptyList())
-
-    Column {
-        // No need for role selection UI in the bottom sheet
-        LazyColumn {
-            items(users) { user ->
-                UserItem(user = user) {
-                    onUserSelected(user) // Pass the user and role
-                }
+    // Filter out already selected users
+    val filteredUsers = users.filterNot { user ->
+        selectedLeaders.contains(user) || selectedEditors.contains(user)
+    }
+    // No need for role selection UI in the bottom sheet
+    LazyColumn {
+        items(filteredUsers) { user ->
+            UserItem(user = user) {
+                onUserSelected(user) // Pass the user and role
             }
         }
     }
@@ -466,7 +474,7 @@ fun UserInputChip(
     user: UserData,
     onRemove: (UserData) -> Unit
 ) {
-    val displayName = user.username?.take(3) ?: "Unknown"
+    val displayName = user.username?.take(8) ?: "Unknown"
 
     InputChip(
         selected = false,
