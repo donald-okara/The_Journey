@@ -1,11 +1,13 @@
 package com.example.thejourney.presentation.communities
 
 import android.net.Uri
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,10 +19,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.Chip
+import androidx.compose.material.ChipDefaults
+import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
@@ -32,11 +40,14 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,6 +61,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
+import com.example.thejourney.presentation.sign_in.UserData
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -58,42 +70,86 @@ fun RequestCommunityScreen(
     viewModel: CommunityViewModel = CommunityViewModel(),
     navigateBack: () -> Unit
 ) {
-    Scaffold (
+    var selectedLeaders by remember { mutableStateOf(emptyList<UserData>()) }
+    var selectedEditors by remember { mutableStateOf(emptyList<UserData>()) }
+    var showBottomSheet by remember { mutableStateOf(false) }
+    val bottomSheetState = rememberModalBottomSheetState()
+    val scope = rememberCoroutineScope()
+    var roleToAdd by remember { mutableStateOf("") }
+
+    Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        text = "Community request",
-                        style = MaterialTheme.typography.titleLarge
-                    )
-                },
+                title = { Text(text = "Community request") },
                 navigationIcon = {
                     IconButton(onClick = { navigateBack() }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Pop Back"
-                        )
+                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
-
             )
-        },
-        modifier = Modifier.fillMaxSize()
-    ) {innerPadding->
+        }
+    ) { innerPadding ->
         CommunityRequestForm(
             modifier = Modifier.padding(innerPadding),
             viewModel = viewModel,
-            navigateBack = navigateBack
+            navigateBack = navigateBack,
+            selectedLeaders = selectedLeaders,
+            selectedEditors = selectedEditors,
+            onLeadersChanged = { updatedLeaders -> selectedLeaders = updatedLeaders },
+            onEditorsChanged = { updatedEditors -> selectedEditors = updatedEditors },
+            onAddLeader = {
+                roleToAdd = "Leader"
+                showBottomSheet = true
+            },
+            onAddEditor = {
+                roleToAdd = "Editor"
+                showBottomSheet = true
+            }
         )
     }
 
+    if (showBottomSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showBottomSheet = false },
+            sheetState = bottomSheetState
+        ) {
+            UserSelectionBottomSheet(
+                viewModel = viewModel,
+                onDismiss = { showBottomSheet = false },
+                roleToAdd = roleToAdd, // Pass the role to add
+                onUserSelected = { user ->
+                    when (roleToAdd) {
+                        "Leader" -> {
+                            selectedLeaders = selectedLeaders + user
+                            Log.d("RequestCommunityScreen", "Selected Leader: ${user.username}")
+                        }
+                        "Editor" -> {
+                            selectedEditors = selectedEditors + user
+                            Log.d("RequestCommunityScreen", "Selected Editor: ${user.username}")
+                        }
+                    }
+                    showBottomSheet = false
+                }
+            )
+        }
+    }
 }
 
+
+
+
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun CommunityRequestForm(
     modifier: Modifier = Modifier,
     viewModel: CommunityViewModel,
-    navigateBack: () -> Unit
+    navigateBack: () -> Unit,
+    selectedLeaders: List<UserData>,
+    selectedEditors: List<UserData>,
+    onLeadersChanged: (List<UserData>) -> Unit,
+    onEditorsChanged: (List<UserData>) -> Unit,
+    onAddLeader: () -> Unit,
+    onAddEditor: () -> Unit,
 ){
     var name by remember { mutableStateOf("") }
     var type by remember { mutableStateOf("Campus") }
@@ -127,7 +183,8 @@ fun CommunityRequestForm(
                 Image(
                     painter = rememberAsyncImagePainter(profileImageUri),
                     contentDescription = null,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier
+                        .fillMaxSize()
                         .clip(CircleShape),
                     contentScale = ContentScale.Crop
 
@@ -174,7 +231,7 @@ fun CommunityRequestForm(
             modifier = modifier.fillMaxWidth(),
             value = name,
             onValueChange = { name = it },
-            label = { Text("Community Name") },
+            label = { Text("Community Name (Cannot be changed later)") },
             textStyle = MaterialTheme.typography.headlineMedium.copy(
                 fontWeight = FontWeight.Bold,
             ),
@@ -259,6 +316,96 @@ fun CommunityRequestForm(
 
         }
 
+        HorizontalDivider()
+
+        // Chips for Leaders
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            selectedLeaders.forEach { user ->
+                Chip(
+                    colors = ChipDefaults.chipColors(
+                        backgroundColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    ),
+                    onClick = {
+                    /* Handle chip click if needed */
+                        onLeadersChanged(selectedLeaders.filter { it != user })
+                    },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Start
+                    ) {
+                        if (user.profilePictureUrl != null) {
+                            Image(
+                                painter = rememberAsyncImagePainter(user.profilePictureUrl),
+                                contentDescription = null,
+                                modifier = Modifier.size(24.dp).clip(CircleShape)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = user.username ?: "Unknown")
+                    }
+                }
+            }
+            Chip(
+                colors = ChipDefaults.chipColors(
+                backgroundColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            ),
+                onClick = { onAddLeader() }) {
+                Text("Add Leader")
+            }
+        }
+
+        // Chips for Editors
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            selectedEditors.forEach { user ->
+
+                Chip(
+                    colors = ChipDefaults.chipColors(
+                        backgroundColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    ),
+                    onClick = {
+                    /* Handle chip click if needed */
+                        onEditorsChanged(selectedEditors.filter { it != user })
+
+                    },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Start
+                    ) {
+                        if (user.profilePictureUrl != null) {
+                            Image(
+                                painter = rememberAsyncImagePainter(user.profilePictureUrl),
+                                contentDescription = null,
+                                modifier = Modifier.size(24.dp).clip(CircleShape)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = user.username ?: "Unknown")
+                    }
+                }
+            }
+            Chip(
+                colors = ChipDefaults.chipColors(
+                    backgroundColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                ),
+                onClick = { onAddEditor() }
+            ) {
+                Text("Add Editor")
+            }
+        }
 
         HorizontalDivider()
 
@@ -273,7 +420,9 @@ fun CommunityRequestForm(
                                 name,
                                 type,
                                 bannerImageUri,
-                                profileImageUri
+                                profileImageUri,
+                                selectedLeaders,
+                                selectedEditors
                             )
                             navigateBack() // Navigate back on success
                         } catch (e: Exception) {
@@ -294,5 +443,54 @@ fun CommunityRequestForm(
         ) {
             Text("Request Community")
         }
+    }
+}
+
+
+@Composable
+fun UserSelectionBottomSheet(
+    viewModel: CommunityViewModel,
+    onDismiss: () -> Unit,
+    roleToAdd: String, // Pass the role to add
+    onUserSelected: (UserData) -> Unit
+) {
+    val users by viewModel.users.collectAsState(emptyList())
+
+    Column {
+        // No need for role selection UI in the bottom sheet
+        LazyColumn {
+            items(users) { user ->
+                UserItem(user = user) {
+                    onUserSelected(user) // Pass the user and role
+                }
+            }
+        }
+    }
+}
+
+
+
+@Composable
+fun UserItem(user: UserData, onUserSelected: (UserData) -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+        modifier = Modifier.clickable { onUserSelected(user) }
+            .padding(16.dp)
+    ) {
+        if (user.profilePictureUrl != null) {
+            Image(
+                painter = rememberAsyncImagePainter(user.profilePictureUrl),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(40.dp) // Specify a fixed size to avoid layout recalculations
+                    .clip(CircleShape),
+                contentScale = ContentScale.Crop
+            )
+        }
+        Text(
+            text = user.username ?: "Unknown",
+            modifier = Modifier.padding(start = 16.dp)
+        )
     }
 }

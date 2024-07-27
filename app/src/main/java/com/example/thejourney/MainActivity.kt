@@ -117,6 +117,22 @@ class MainActivity : ComponentActivity() {
                         composable("emailSignIn") {
                             val state by signInViewModel.state.collectAsStateWithLifecycle()
 
+                            LaunchedEffect(key1 = state.isSignInSuccessful) {
+                                if (state.isSignInSuccessful) {
+                                    Toast.makeText(
+                                        applicationContext,
+                                        "Signin successful",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+
+                                    navController.navigate("home") {
+                                        popUpTo("emailSignIn") { inclusive = true }
+                                    }
+                                    signInViewModel.resetState()
+                                }
+
+                            }
+
                             EmailSignInScreen(
                                 state = state,
                                 onSignInWithEmail = { email, password ->
@@ -128,6 +144,22 @@ class MainActivity : ComponentActivity() {
 
                         composable("emailSignUp") {
                             val state by signInViewModel.state.collectAsStateWithLifecycle()
+
+                            LaunchedEffect(key1 = state.isSignInSuccessful) {
+                                if (state.isSignInSuccessful) {
+                                    Toast.makeText(
+                                        applicationContext,
+                                        "Signin successful",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+
+                                    navController.navigate("home") {
+                                        popUpTo("emailSignUp") { inclusive = true }
+                                    }
+                                    signInViewModel.resetState()
+                                }
+
+                            }
 
                             EmailSignUpScreen(
                                 state = state,
