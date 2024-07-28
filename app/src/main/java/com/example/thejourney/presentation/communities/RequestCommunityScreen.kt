@@ -43,6 +43,7 @@ import androidx.compose.material3.InputChip
 import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -70,7 +71,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RequestCommunityScreen(
-    viewModel: CommunityViewModel = CommunityViewModel(),
+    viewModel: CommunityViewModel,
     navigateBack: () -> Unit
 ) {
     var selectedLeaders by remember { mutableStateOf(emptyList<UserData>()) }
@@ -232,11 +233,12 @@ fun CommunityRequestForm(
 
         }
 
-        TextField(
+        OutlinedTextField(
             modifier = modifier.fillMaxWidth(),
             value = name,
+            placeholder = {Text(text = "Cannot be changed later..")},
             onValueChange = { name = it },
-            label = { Text("Community Name (Cannot be changed later)") },
+            label = { Text("Community Name") },
             textStyle = MaterialTheme.typography.headlineMedium.copy(
                 fontWeight = FontWeight.Bold,
             ),
@@ -477,27 +479,24 @@ fun UserInputChip(
     val displayName = user.username?.take(8) ?: "Unknown"
 
     InputChip(
+        avatar =
+        {
+            Image(
+                painter = rememberAsyncImagePainter(model = user.profilePictureUrl),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(24.dp)
+                    .clip(CircleShape),
+                contentScale = ContentScale.Crop
+            )
+        }
+        ,
         selected = false,
         onClick = { onRemove(user) },
         label = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Image(
-                    painter = rememberAsyncImagePainter(
-                        model = user.profilePictureUrl,
-                    ),
-                    contentDescription = user.username,
-                    modifier = Modifier
-                        .size(24.dp)
-                        .clip(CircleShape),
-                    contentScale = ContentScale.Crop
-                )
-                Text(
-                    text = displayName,
-                )
-            }
+            Text(
+                text = displayName,
+            )
         },
         trailingIcon = {
             IconButton(onClick = { onRemove(user) }) {

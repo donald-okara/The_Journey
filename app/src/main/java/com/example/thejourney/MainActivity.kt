@@ -14,11 +14,15 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.thejourney.domain.CommunityRepository
+import com.example.thejourney.domain.UserRepository
 import com.example.thejourney.presentation.admin.AdminCommunityView
 import com.example.thejourney.presentation.admin.AdminDashboard
 import com.example.thejourney.presentation.communities.CommunitiesScreen
@@ -32,6 +36,8 @@ import com.example.thejourney.presentation.sign_in.GoogleAuthUiClient
 import com.example.thejourney.presentation.sign_in.SignInViewModel
 import com.example.thejourney.ui.theme.TheJourneyTheme
 import com.google.android.gms.auth.api.identity.Identity
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -42,13 +48,21 @@ class MainActivity : ComponentActivity() {
         )
     }
 
+    private val db = FirebaseFirestore.getInstance()
+    private val auth = FirebaseAuth.getInstance()
+    private val userRepository = UserRepository(db, auth)
+    private val communityRepository = CommunityRepository(db, auth, userRepository)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         enableEdgeToEdge()
+        val viewModelFactory = ViewModelFactory(communityRepository, userRepository)
 
-        // Create SignInViewModel instance
+        // Create viewmodel instances
         val signInViewModel = SignInViewModel()
+        val communityViewModel = ViewModelProvider(this, viewModelFactory)[CommunityViewModel::class.java]
+
 
         // Determine the start destination
         val startDestination = if (signInViewModel.getSignedInUser() != null) "home" else "welcome"
@@ -220,6 +234,7 @@ class MainActivity : ComponentActivity() {
 
                         composable("request_community"){
                             RequestCommunityScreen(
+                                viewModel = communityViewModel,
                                 navigateBack = {navController.popBackStack()},
                             )
                         }
@@ -229,3 +244,4 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+

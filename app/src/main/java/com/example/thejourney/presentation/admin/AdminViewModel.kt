@@ -123,7 +123,7 @@ class AdminViewModel : ViewModel() {
 }
 
 sealed class CommunityState {
-    object Loading : CommunityState()
+    data object Loading : CommunityState()
     data class Success(val communities: List<Community>) : CommunityState()
     data class Error(val message: String) : CommunityState()
 }
