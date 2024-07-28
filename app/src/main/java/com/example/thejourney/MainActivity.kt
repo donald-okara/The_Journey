@@ -51,7 +51,7 @@ class MainActivity : ComponentActivity() {
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
     private val userRepository = UserRepository(db, auth)
-    private val communityRepository = CommunityRepository(db, auth, userRepository)
+    private val communityRepository = CommunityRepository(db, userRepository)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
