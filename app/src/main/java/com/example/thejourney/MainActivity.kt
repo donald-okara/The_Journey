@@ -210,7 +210,7 @@ class MainActivity : ComponentActivity() {
 
                         composable("home") {
                             val isAdmin by userRepository.isAdmin.collectAsState()
-                            val pendingCount = communityRepository.pendingCount.intValue
+                            val pendingCount by adminViewModel.pendingCount
 
                             HomeScreen(
                                 isAdmin = isAdmin,
@@ -231,7 +231,10 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable("approve_community_screen") {
+                            val pendingCount by adminViewModel.pendingCount
+
                             AdminCommunityView(
+                                pendingCount = pendingCount,
                                 viewModel = adminViewModel,
                                 navigateBack = {navController.popBackStack()}
                             )

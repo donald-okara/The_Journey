@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun AdminCommunityView(
     viewModel: AdminViewModel,
+    pendingCount: Int,
     navigateBack : () -> Unit
 ) {
     Scaffold (
@@ -46,7 +47,8 @@ fun AdminCommunityView(
     ) {innerPadding->
         AdminCommunityViewContent(
             modifier = Modifier.padding(innerPadding),
-            viewModel = viewModel
+            viewModel = viewModel,
+            pendingCount = pendingCount
         )
 
     }
@@ -56,12 +58,12 @@ fun AdminCommunityView(
 @Composable
 fun AdminCommunityViewContent(
     modifier: Modifier = Modifier,
+    pendingCount : Int,
     viewModel: AdminViewModel
 ){
     val pendingState by viewModel.pendingState.collectAsState()
     val liveState by viewModel.liveState.collectAsState()
     val rejectedState by viewModel.rejectedState.collectAsState()
-    val pendingCount by remember { viewModel.pendingCount }
 
     val pagerState = rememberPagerState()
     val coroutineScope = rememberCoroutineScope()
