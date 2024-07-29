@@ -19,7 +19,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminCommunityView(
-    viewModel: AdminViewModel = AdminViewModel(),
+    viewModel: AdminViewModel,
     navigateBack : () -> Unit
 ) {
     Scaffold (

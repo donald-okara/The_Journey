@@ -37,7 +37,7 @@ import com.example.thejourney.ui.theme.TheJourneyTheme
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CommunitiesScreen(
-    adminViewModel: AdminViewModel = viewModel(),
+    communityViewModel: CommunityViewModel,
     navigateBack: () -> Unit,
     navigateToAddCommunity: () -> Unit
 ) {
@@ -74,7 +74,7 @@ fun CommunitiesScreen(
     ) {innerPadding->
         CommunitiesScreenContent(
             modifier = Modifier.padding(innerPadding),
-            adminViewModel = adminViewModel
+            communityViewModel = communityViewModel
         )
     }
 }
@@ -82,9 +82,9 @@ fun CommunitiesScreen(
 @Composable
 fun CommunitiesScreenContent(
     modifier: Modifier = Modifier,
-    adminViewModel: AdminViewModel
+    communityViewModel: CommunityViewModel
 ){
-    val liveState by adminViewModel.liveState.collectAsState()
+    val liveState by communityViewModel.liveState.collectAsState()
 
     Column(
         modifier = modifier

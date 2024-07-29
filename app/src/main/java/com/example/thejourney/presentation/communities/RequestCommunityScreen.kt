@@ -15,13 +15,16 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -33,8 +36,10 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.rememberScaffoldState
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -46,10 +51,12 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -66,6 +73,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import com.example.thejourney.presentation.sign_in.UserData
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -163,6 +171,9 @@ fun CommunityRequestForm(
     var profileImageUri by remember { mutableStateOf<String?>(null) }
     val coroutineScope = rememberCoroutineScope() // Define the CoroutineScope
     val scrollState = rememberScrollState()
+    var requestError by remember { mutableStateOf<String?>(null) }
+    val requestStatus by viewModel.requestStatus.collectAsState()
+    val scaffoldState = rememberScaffoldState()
 
     val context = LocalContext.current
     val launcherBanner = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
@@ -181,203 +192,235 @@ fun CommunityRequestForm(
     ) {
         // Profile Image Section
 
-        Box(
-            modifier = modifier
-                .size(256.dp)
-        ) {
-            if (profileImageUri != null) {
-                Image(
-                    painter = rememberAsyncImagePainter(profileImageUri),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(CircleShape),
-                    contentScale = ContentScale.Crop
-
-                )
-                IconButton(
-                    onClick = { profileImageUri = null },
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .offset(x = 6.dp, y = (-12).dp) // Offset to overflow the image
-                        .size(48.dp) // Size of the button
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer)
+        LazyRow {
+            item {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                    modifier = modifier
+                        .width(320.dp) // Uniform width for each item
+                        .padding(8.dp) // Optional padding
                 ){
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Remove",
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-            } else {
-                Column {
-                    Button(
-                        onClick = { launcherProfile.launch("image/*") },
-                        modifier = Modifier.fillMaxSize()
+                    Box(
+                        modifier = modifier
+                            .size(256.dp)
                     ) {
-                        Icon(
-                            modifier = Modifier.fillMaxSize(),
-                            imageVector = Icons.Default.PhotoCamera,
-                            contentDescription = "Add profile picture"
-                        )
+                        if (profileImageUri != null) {
+                            Image(
+                                painter = rememberAsyncImagePainter(profileImageUri),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(CircleShape),
+                                contentScale = ContentScale.Crop
+
+                            )
+                            IconButton(
+                                onClick = { profileImageUri = null },
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .offset(x = 6.dp, y = (-12).dp) // Offset to overflow the image
+                                    .size(48.dp) // Size of the button
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primaryContainer)
+                            ){
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Remove",
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                        } else {
+                            Column {
+                                Button(
+                                    onClick = { launcherProfile.launch("image/*") },
+                                    modifier = Modifier.fillMaxSize()
+                                ) {
+                                    Icon(
+                                        modifier = Modifier.fillMaxSize(),
+                                        imageVector = Icons.Default.PhotoCamera,
+                                        contentDescription = "Add profile picture"
+                                    )
+                                }
+                                Text(text = "Add profile image")
+                            }
+                        }
                     }
-                    Text(text = "Add profile image")
-                }
-            }
-        }
-        if (profileImageUri != null) {
-            Text("Looking good!")
-        }else{
-            Text("Select profile image")
+                    if (profileImageUri != null) {
+                        Text("Looking good!")
+                    }else{
+                        Text("Select profile image")
 
-        }
+                    }
 
-        OutlinedTextField(
-            modifier = modifier.fillMaxWidth(),
-            value = name,
-            placeholder = {Text(text = "Cannot be changed later..")},
-            onValueChange = { name = it },
-            label = { Text("Community Name") },
-            textStyle = MaterialTheme.typography.headlineMedium.copy(
-                fontWeight = FontWeight.Bold,
-            ),
-        )
-
-        HorizontalDivider()
-        Text(
-            "Community Type",
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier
-                .fillMaxWidth()
-        )
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Start,
-        ) {
-            RadioButton(
-                selected = type == "Campus",
-                onClick = { type = "Campus" }
-            )
-            Text(text = "Campus", modifier = Modifier.padding(start = 8.dp))
-
-            Spacer(modifier = modifier.weight(1f))
-
-            RadioButton(
-                selected = type == "Church",
-                onClick = { type = "Church" }
-            )
-            Text(text = "Church", modifier = Modifier.padding(start = 8.dp))
-        }
-
-        // Community Banner Section
-        HorizontalDivider()
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(300.dp),
-        ) {
-            if (bannerImageUri != null) {
-                Image(
-                    painter = rememberAsyncImagePainter(bannerImageUri),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
+                    OutlinedTextField(
+                        modifier = modifier.fillMaxWidth(),
+                        value = name,
+                        onValueChange = { name = it },
+                        label = { Text("Community Name") },
+                        textStyle = MaterialTheme.typography.headlineMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                        ),
+                    )
+                    Text(
+                        "Community Type",
+                    style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier
-                        .fillMaxSize()
-                )
-                IconButton(
-                    onClick = { bannerImageUri = null },
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .offset(x = 16.dp, y = 16.dp) // Adjust the offset as needed
-                        .size(48.dp) // Size of the button
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer)
-                ){
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Remove",
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        .fillMaxWidth()
                     )
-                }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Start,
+                    ) {
+                        RadioButton(
+                            selected = type == "Campus",
+                            onClick = { type = "Campus" }
+                        )
+                        Text(text = "Campus", modifier = Modifier.padding(start = 8.dp))
 
-            } else {
-                Button(
-                    onClick = { launcherBanner.launch("image/*") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp)
+                        Spacer(modifier = modifier.weight(1f))
+
+                        RadioButton(
+                            selected = type == "Church",
+                            onClick = { type = "Church" }
+                        )
+                        Text(text = "Church", modifier = Modifier.padding(start = 8.dp))
+                    }
+                }
+            }
+
+            item {
+                Column(
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = modifier
+                        .width(320.dp) // Uniform width for each item
+                        .padding(8.dp) // Optional padding
+                        .fillMaxHeight()
                 ) {
-                    Icon(
-                        modifier = Modifier.fillMaxSize(),
-                        imageVector = Icons.Default.PhotoCamera,
-                        contentDescription = "Select community banner"
-                    )
+                    // Community Banner Section
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(300.dp),
+                    ) {
+                        if (bannerImageUri != null) {
+                            Image(
+                                painter = rememberAsyncImagePainter(bannerImageUri),
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                            )
+                            IconButton(
+                                onClick = { bannerImageUri = null },
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .offset(x = 16.dp, y = 16.dp) // Adjust the offset as needed
+                                    .size(48.dp) // Size of the button
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primaryContainer)
+                            ){
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Remove",
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+
+                        } else {
+                            Button(
+                                onClick = { launcherBanner.launch("image/*") },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Icon(
+                                    modifier = Modifier.fillMaxSize(),
+                                    imageVector = Icons.Default.PhotoCamera,
+                                    contentDescription = "Select community banner"
+                                )
+                            }
+                        }
+                    }
+
+                    if (bannerImageUri != null) {
+                        Text("Looking better!")
+                    }else{
+                        Text("Select community banner")
+
+                    }
+                }
+            }
+
+            item {
+                // Chips for Leaders
+                Column(
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = modifier
+                        .width(320.dp) // Uniform width for each item
+                        .padding(8.dp) // Optional padding
+                ) {
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        selectedLeaders.forEach { user ->
+                            UserInputChip(
+                                user = user,
+                                onRemove = { onLeadersChanged(selectedLeaders.filter { it != user }) })
+                        }
+                        Button(
+                            onClick = { onAddLeader() }
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = "Add Leader"
+                                )
+                                Text("Add Leader")
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
+                    HorizontalDivider()
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    // Chips for Editors
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        selectedEditors.forEach { user ->
+                            UserInputChip(
+                                user = user,
+                                onRemove = { onEditorsChanged(selectedEditors.filter { it != user }) })
+
+                        }
+                        Button(
+                            onClick = { onAddEditor() }
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = "Add Editor"
+                                )
+                                Text("Add Editor")
+                            }
+                        }
+                    }
                 }
             }
         }
-
-        if (bannerImageUri != null) {
-            Text("Looking better!")
-        }else{
-            Text("Select community banner")
-
-        }
+        Text("Swipe to continue >>")
 
         HorizontalDivider()
-
-        // Chips for Leaders
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            selectedLeaders.forEach { user ->
-                UserInputChip(user = user, onRemove = { onLeadersChanged(selectedLeaders.filter { it != user }) })
-            }
-            Button(
-                onClick = { onAddLeader() }
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = "Add Leader"
-                    )
-                    Text("Add Leader")
-                }
-            }
-        }
-
-        HorizontalDivider()
-
-        // Chips for Editors
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            selectedEditors.forEach { user ->
-                UserInputChip(user = user, onRemove = { onEditorsChanged(selectedEditors.filter { it != user }) })
-
-            }
-            Button(
-                onClick = { onAddEditor() }
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = "Add Editor"
-                    )
-                    Text("Add Editor")
-                }
-            }
-        }
-
-        HorizontalDivider()
-
 
         Button(
             modifier = modifier.fillMaxWidth(),
@@ -408,9 +451,43 @@ fun CommunityRequestForm(
                     Toast.makeText(context, "Please enter a community name", Toast.LENGTH_SHORT)
                         .show()
                 }
-            }
+            },
+            enabled = name.isNotEmpty()
         ) {
             Text("Request Community")
+        }
+        // Handle request status
+        when (requestStatus) {
+            is RequestStatus.Loading -> {
+                // Full-screen loading indicator
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f))
+                        .clickable(enabled = false) {}, // Disable clicks
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.tertiary)
+                }
+            }
+            is RequestStatus.Success -> {
+                LaunchedEffect(Unit) {
+                    scaffoldState.snackbarHostState.showSnackbar(
+                        message = "Community request successful!",
+                    )
+                    delay(3000) // Show the snack-bar for 3 seconds
+                    navigateBack()
+                    viewModel.clearRequestStatus()
+                }
+            }
+            is RequestStatus.Error -> {
+                val errorMessage = (requestStatus as RequestStatus.Error).message
+                LaunchedEffect(errorMessage) {
+                    scaffoldState.snackbarHostState.showSnackbar(errorMessage)
+                    viewModel.clearRequestStatus() // Clear status after showing the message
+                }
+            }
+            else -> Unit
         }
     }
 }

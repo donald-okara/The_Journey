@@ -12,9 +12,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
@@ -25,6 +26,7 @@ import com.example.thejourney.domain.CommunityRepository
 import com.example.thejourney.domain.UserRepository
 import com.example.thejourney.presentation.admin.AdminCommunityView
 import com.example.thejourney.presentation.admin.AdminDashboard
+import com.example.thejourney.presentation.admin.AdminViewModel
 import com.example.thejourney.presentation.communities.CommunitiesScreen
 import com.example.thejourney.presentation.communities.CommunityViewModel
 import com.example.thejourney.presentation.communities.RequestCommunityScreen
@@ -38,6 +40,8 @@ import com.example.thejourney.ui.theme.TheJourneyTheme
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -47,23 +51,23 @@ class MainActivity : ComponentActivity() {
             oneTapClient = Identity.getSignInClient(applicationContext)
         )
     }
-
+    private val coroutineScope = CoroutineScope(Dispatchers.IO) // Define CoroutineScope
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
-    private val userRepository = UserRepository(db, auth)
-    private val communityRepository = CommunityRepository(db, userRepository)
+    private var userRepository = UserRepository(db, auth, coroutineScope)
+    private val communityRepository = CommunityRepository(db, userRepository, coroutineScope)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         enableEdgeToEdge()
         val viewModelFactory = ViewModelFactory(communityRepository, userRepository)
+        val userData = userRepository.getCurrentUser()
 
         // Create viewmodel instances
         val signInViewModel = SignInViewModel()
-        val communityViewModel = ViewModelProvider(this, viewModelFactory)[CommunityViewModel::class.java]
-
-
+        val communityViewModel: CommunityViewModel = ViewModelProvider(this, viewModelFactory)[CommunityViewModel::class.java]
+        val adminViewModel: AdminViewModel = ViewModelProvider(this, viewModelFactory)[AdminViewModel::class.java]
         // Determine the start destination
         val startDestination = if (signInViewModel.getSignedInUser() != null) "home" else "welcome"
 
@@ -205,22 +209,30 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable("home") {
+                            val isAdmin by userRepository.isAdmin.collectAsState()
+                            val pendingCount = communityRepository.pendingCount.intValue
+
                             HomeScreen(
-                                onNavigateToProfile = {navController.navigate("profile") },
+                                isAdmin = isAdmin,
+                                pendingCount = pendingCount,
+                                userData = userData,
+                                onNavigateToProfile = { navController.navigate("profile") },
                                 onNavigateToAdmin = { navController.navigate("admin_console") },
-                                navigateToCommunities = {navController.navigate("community_list")}
-                            )
+                                navigateToCommunities = { navController.navigate("community_list") },
+                                )
                         }
 
                         composable("admin_console") {
                             AdminDashboard(
                                 onNavigateToCommunities = { navController.navigate("approve_community_screen") },
-                                navigateBack = {navController.popBackStack()}
+                                navigateBack = {navController.popBackStack()},
+                                viewModel = adminViewModel
                             )
                         }
 
                         composable("approve_community_screen") {
                             AdminCommunityView(
+                                viewModel = adminViewModel,
                                 navigateBack = {navController.popBackStack()}
                             )
                         }
@@ -228,8 +240,9 @@ class MainActivity : ComponentActivity() {
                         composable("community_list"){
                             CommunitiesScreen(
                                 navigateBack = {navController.popBackStack()},
-                                navigateToAddCommunity = {navController.navigate("request_community")}
-                            )
+                                navigateToAddCommunity = {navController.navigate("request_community")},
+                                communityViewModel = communityViewModel
+                                )
                         }
 
                         composable("request_community"){

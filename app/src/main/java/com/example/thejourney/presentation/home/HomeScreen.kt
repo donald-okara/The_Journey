@@ -58,6 +58,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.thejourney.R
+import com.example.thejourney.domain.CommunityRepository
 import com.example.thejourney.presentation.admin.AdminViewModel
 import com.example.thejourney.presentation.sign_in.SignInViewModel
 import com.example.thejourney.presentation.sign_in.UserData
@@ -68,17 +69,16 @@ import kotlinx.coroutines.launch
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
+    userData: UserData?,
     onNavigateToProfile: () -> Unit,
     onNavigateToAdmin: () -> Unit,
+    isAdmin: Boolean,
+    pendingCount: Int,
     navigateToCommunities: () -> Unit,
-    signInViewModel: SignInViewModel = SignInViewModel(),
-    adminViewModel: AdminViewModel = AdminViewModel()
 ) {
-    val isAdmin by signInViewModel.isAdmin.collectAsState()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     val scope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    val pendingCount by remember { adminViewModel.pendingCount }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -89,9 +89,9 @@ fun HomeScreen(
                     onNavigateToProfile = { onNavigateToProfile() },
                     onNavigateToAdmin = { onNavigateToAdmin() },
                     navigateToCommunities = navigateToCommunities,
-                    signInViewModel = signInViewModel,
                     pendingCount = pendingCount,
-                    isAdmin = isAdmin
+                    isAdmin = isAdmin,
+                    userData = userData
                 )
             }
         }
@@ -116,12 +116,12 @@ fun HomeScreen(
 
 @Composable
 fun HomeDrawerContent(
+    userData: UserData?,
     modifier: Modifier = Modifier,
     isAdmin: Boolean = false,
     onNavigateToProfile: () -> Unit,
     onNavigateToAdmin: () -> Unit,
     navigateToCommunities: () -> Unit,
-    signInViewModel: SignInViewModel,
     pendingCount : Int
 ){
     Column(
@@ -131,7 +131,7 @@ fun HomeDrawerContent(
         horizontalAlignment = Alignment.Start
     ) {
         DrawerHeader(
-            userData = signInViewModel.getSignedInUser(),
+            userData = userData,
             modifier = modifier.clickable { onNavigateToProfile() }
         )
 

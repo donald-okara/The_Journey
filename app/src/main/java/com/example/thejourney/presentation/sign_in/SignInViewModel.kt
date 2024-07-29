@@ -17,34 +17,8 @@ import kotlin.reflect.jvm.isAccessible
 
 class SignInViewModel : ViewModel() {
     private val firebaseAuth: FirebaseAuth = FirebaseAuth.getInstance()
-    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
-    private val db = FirebaseFirestore.getInstance()
-    private val _isAdmin = MutableStateFlow(false)
-    val isAdmin: StateFlow<Boolean> = _isAdmin
     private val _state = MutableStateFlow(SignInState())
     val state = _state.asStateFlow()
-
-    init {
-        fetchAdminStatus()
-    }
-
-    private fun fetchAdminStatus() {
-        val userId = firebaseAuth.currentUser?.uid
-        if (userId != null) {
-            viewModelScope.launch {
-                db.collection("users").document(userId).get()
-                    .addOnSuccessListener { document ->
-                        if (document != null) {
-                            _isAdmin.value = document.getBoolean("admin") == true
-                        }
-                    }
-                    .addOnFailureListener { exception ->
-                        Log.e("UserViewModel", "Error fetching admin status", exception)
-                        // Set default value for _isAdmin
-                    }
-            }
-        }
-    }
 
     fun onSignInResult(result: SignInResult){
         _state.update {

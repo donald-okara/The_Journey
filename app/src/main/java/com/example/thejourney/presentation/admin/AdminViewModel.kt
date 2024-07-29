@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.thejourney.domain.CommunityRepository
 import com.example.thejourney.presentation.communities.model.Community
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,8 +13,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
-class AdminViewModel : ViewModel() {
-    private val db = FirebaseFirestore.getInstance()
+class AdminViewModel(private val communityRepository: CommunityRepository) : ViewModel() {
+    private val db = communityRepository.db
 
     private val _pendingState = MutableStateFlow<CommunityState>(CommunityState.Loading)
     val pendingState: StateFlow<CommunityState> = _pendingState
@@ -32,56 +33,44 @@ class AdminViewModel : ViewModel() {
     }
 
 
+
     private fun fetchPendingRequests() {
         viewModelScope.launch {
             _pendingState.value = CommunityState.Loading
-            db.collection("communities")
-                .whereEqualTo("status", "Pending")
-                .addSnapshotListener { snapshots, e ->
-                    if (e != null) {
-                        _pendingState.value = CommunityState.Error("Failed to fetch pending requests: ${e.message}")
-                        return@addSnapshotListener
-                    }
-                    val requests = snapshots?.documents?.mapNotNull { it.toObject(Community::class.java) }
-                    _pendingState.value = CommunityState.Success(requests ?: emptyList())
-                    if (requests != null) {
-                        pendingCount.intValue = requests.size
-                    } // Update count based on the list size
-                }
+            try {
+                val requests = communityRepository.getPendingCommunities()
+                _pendingState.value = CommunityState.Success(requests)
+                pendingCount.intValue = requests.size // Update count based on the list size
+            } catch (e: Exception) {
+                _pendingState.value = CommunityState.Error("Failed to fetch pending requests: ${e.message}")
+            }
         }
     }
 
     private fun fetchLiveCommunities() {
         viewModelScope.launch {
             _liveState.value = CommunityState.Loading
-            db.collection("communities")
-                .whereEqualTo("status", "Live")
-                .addSnapshotListener { snapshots, e ->
-                    if (e != null) {
-                        _liveState.value = CommunityState.Error("Failed to fetch live communities: ${e.message}")
-                        return@addSnapshotListener
-                    }
-                    val communities = snapshots?.documents?.mapNotNull { it.toObject(Community::class.java) }
-                    _liveState.value = CommunityState.Success(communities ?: emptyList())
-                }
+            try {
+                val communities = communityRepository.getLiveCommunities()
+                _liveState.value = CommunityState.Success(communities)
+            } catch (e: Exception) {
+                _liveState.value = CommunityState.Error("Failed to fetch live communities: ${e.message}")
+            }
         }
     }
 
     private fun fetchRejectedCommunities() {
         viewModelScope.launch {
             _rejectedState.value = CommunityState.Loading
-            db.collection("communities")
-                .whereEqualTo("status", "Rejected")
-                .addSnapshotListener { snapshots, e ->
-                    if (e != null) {
-                        _rejectedState.value = CommunityState.Error("Failed to fetch rejected communities: ${e.message}")
-                        return@addSnapshotListener
-                    }
-                    val communities = snapshots?.documents?.mapNotNull { it.toObject(Community::class.java) }
-                    _rejectedState.value = CommunityState.Success(communities ?: emptyList())
-                }
+            try {
+                val communities = communityRepository.getRejectedCommunities()
+                _rejectedState.value = CommunityState.Success(communities)
+            } catch (e: Exception) {
+                _rejectedState.value = CommunityState.Error("Failed to fetch rejected communities: ${e.message}")
+            }
         }
     }
+
 
     fun approveCommunity(request: Community) {
         viewModelScope.launch {
