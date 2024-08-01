@@ -1,11 +1,13 @@
 package com.example.thejourney.presentation.communities
 
+import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.thejourney.domain.CommunityRepository
 import com.example.thejourney.domain.UserRepository
 import com.example.thejourney.presentation.admin.CommunityState
+import com.example.thejourney.presentation.communities.model.Community
 import com.example.thejourney.presentation.sign_in.UserData
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -52,23 +54,37 @@ class CommunityViewModel(
         }
     }
 
+    // Function to get a community by its ID
+    fun getCommunityByName(communityName: String?): Community? {
+        if (communityName == null) return null
+
+        val state = _liveState.value
+        return if (state is CommunityState.Success) {
+            state.communities.find { it.name == communityName }
+        } else {
+            null
+        }
+    }
     fun requestNewCommunity(
         communityName: String,
         communityType: String,
-        bannerUri: String?,
-        profileUri: String?,
+        bannerUri: Uri?,
+        aboutUs : String?,
+        profileUri: Uri?,
         selectedLeaders: List<UserData>,
         selectedEditors: List<UserData>
     ) {
+
         viewModelScope.launch {
             try {
                 communityRepository.requestNewCommunity(
-                    communityName,
-                    communityType,
-                    bannerUri,
-                    profileUri,
-                    selectedLeaders,
-                    selectedEditors
+                    communityName = communityName,
+                    communityType = communityType,
+                    bannerUri = bannerUri,
+                    profileUri = profileUri,
+                    selectedLeaders = selectedLeaders,
+                    selectedEditors = selectedEditors,
+                    aboutUs = aboutUs
                 )
                 _requestStatus.value = RequestStatus.Success
             } catch (e: Exception) {

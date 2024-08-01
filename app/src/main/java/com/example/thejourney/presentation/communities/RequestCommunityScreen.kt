@@ -51,9 +51,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -69,10 +67,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import com.example.thejourney.presentation.sign_in.UserData
+import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -152,7 +150,7 @@ fun RequestCommunityScreen(
 
 
 
-@OptIn(ExperimentalMaterialApi::class, ExperimentalLayoutApi::class)
+@OptIn( ExperimentalLayoutApi::class)
 @Composable
 fun CommunityRequestForm(
     modifier: Modifier = Modifier,
@@ -167,21 +165,28 @@ fun CommunityRequestForm(
 ){
     var name by remember { mutableStateOf("") }
     var type by remember { mutableStateOf("Campus") }
-    var bannerImageUri by remember { mutableStateOf<String?>(null) }
-    var profileImageUri by remember { mutableStateOf<String?>(null) }
+    var bannerImageUri by remember { mutableStateOf<Uri?>(null) }
+    var profileImageUri by remember { mutableStateOf<Uri?>(null) }
+    var aboutUs by remember { mutableStateOf("") }
     val coroutineScope = rememberCoroutineScope() // Define the CoroutineScope
     val scrollState = rememberScrollState()
-    var requestError by remember { mutableStateOf<String?>(null) }
     val requestStatus by viewModel.requestStatus.collectAsState()
     val scaffoldState = rememberScaffoldState()
 
     val context = LocalContext.current
-    val launcherBanner = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
-        uri?.let { bannerImageUri = it.toString() }
-    }
-    val launcherProfile = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
-        uri?.let { profileImageUri = it.toString() }
-    }
+    val launcherBanner = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+        onResult = { uri: Uri? ->
+            uri?.let { bannerImageUri = it }
+        }
+    )
+    val launcherProfile = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent(),
+        onResult = { uri: Uri? ->
+            uri?.let { profileImageUri = it }
+        }
+
+    )
 
     Column(
         modifier = modifier
@@ -198,6 +203,7 @@ fun CommunityRequestForm(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
                     modifier = modifier
+                        .fillMaxHeight()
                         .width(320.dp) // Uniform width for each item
                         .padding(8.dp) // Optional padding
                 ){
@@ -215,6 +221,7 @@ fun CommunityRequestForm(
                                 contentScale = ContentScale.Crop
 
                             )
+
                             IconButton(
                                 onClick = { profileImageUri = null },
                                 modifier = Modifier
@@ -230,6 +237,7 @@ fun CommunityRequestForm(
                                     tint = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
                             }
+
                         } else {
                             Column {
                                 Button(
@@ -262,30 +270,8 @@ fun CommunityRequestForm(
                             fontWeight = FontWeight.Bold,
                         ),
                     )
-                    Text(
-                        "Community Type",
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                    )
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Start,
-                    ) {
-                        RadioButton(
-                            selected = type == "Campus",
-                            onClick = { type = "Campus" }
-                        )
-                        Text(text = "Campus", modifier = Modifier.padding(start = 8.dp))
 
-                        Spacer(modifier = modifier.weight(1f))
 
-                        RadioButton(
-                            selected = type == "Church",
-                            onClick = { type = "Church" }
-                        )
-                        Text(text = "Church", modifier = Modifier.padding(start = 8.dp))
-                    }
                 }
             }
 
@@ -345,9 +331,45 @@ fun CommunityRequestForm(
 
                     if (bannerImageUri != null) {
                         Text("Looking better!")
-                    }else{
+                    } else {
                         Text("Select community banner")
 
+                    }
+
+                    OutlinedTextField(
+                        modifier = modifier.fillMaxWidth(),
+                        value = aboutUs,
+                        maxLines = 10,
+                        onValueChange = { aboutUs = it },
+                        label = { Text("Community description") },
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                        )
+                    )
+                    Text(
+                        "Community Type",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                    )
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Start,
+                    ) {
+                        RadioButton(
+                            selected = type == "Campus",
+                            onClick = { type = "Campus" }
+                        )
+                        Text(text = "Campus", modifier = Modifier.padding(start = 8.dp))
+
+                        Spacer(modifier = modifier.weight(1f))
+
+                        RadioButton(
+                            selected = type == "Church",
+                            onClick = { type = "Church" }
+                        )
+                        Text(text = "Church", modifier = Modifier.padding(start = 8.dp))
                     }
                 }
             }
@@ -358,6 +380,7 @@ fun CommunityRequestForm(
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = modifier
+                        .fillMaxHeight()
                         .width(320.dp) // Uniform width for each item
                         .padding(8.dp) // Optional padding
                 ) {
@@ -429,12 +452,13 @@ fun CommunityRequestForm(
                     coroutineScope.launch {
                         try {
                             viewModel.requestNewCommunity(
-                                name,
-                                type,
-                                bannerImageUri,
-                                profileImageUri,
-                                selectedLeaders,
-                                selectedEditors
+                                communityName = name,
+                                communityType = type,
+                                bannerUri = bannerImageUri,
+                                profileUri = profileImageUri,
+                                selectedLeaders = selectedLeaders,
+                                selectedEditors = selectedEditors,
+                                aboutUs = aboutUs
                             )
                             navigateBack() // Navigate back on success
                         } catch (e: Exception) {

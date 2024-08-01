@@ -14,9 +14,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
@@ -28,6 +26,7 @@ import com.example.thejourney.presentation.admin.AdminCommunityView
 import com.example.thejourney.presentation.admin.AdminDashboard
 import com.example.thejourney.presentation.admin.AdminViewModel
 import com.example.thejourney.presentation.communities.CommunitiesScreen
+import com.example.thejourney.presentation.communities.CommunityDetails
 import com.example.thejourney.presentation.communities.CommunityViewModel
 import com.example.thejourney.presentation.communities.RequestCommunityScreen
 import com.example.thejourney.presentation.home.HomeScreen
@@ -40,34 +39,38 @@ import com.example.thejourney.ui.theme.TheJourneyTheme
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
-    private val googleAuthUiClient by lazy {
-        GoogleAuthUiClient(
-            context = applicationContext,
-            oneTapClient = Identity.getSignInClient(applicationContext)
-        )
-    }
-    private val coroutineScope = CoroutineScope(Dispatchers.IO) // Define CoroutineScope
-    private val db = FirebaseFirestore.getInstance()
-    private val auth = FirebaseAuth.getInstance()
-    private var userRepository = UserRepository(db, auth, coroutineScope)
-    private val communityRepository = CommunityRepository(db, userRepository, coroutineScope)
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         enableEdgeToEdge()
-        val viewModelFactory = ViewModelFactory(communityRepository, userRepository)
+
+        val googleAuthUiClient by lazy {
+            GoogleAuthUiClient(
+                context = applicationContext,
+                oneTapClient = Identity.getSignInClient(applicationContext)
+            )
+        }
+        val coroutineScope = CoroutineScope(Dispatchers.IO) // Define CoroutineScope
+        val storage = FirebaseStorage.getInstance()
+        val db = FirebaseFirestore.getInstance()
+        val auth = FirebaseAuth.getInstance()
+        val userRepository = UserRepository(db, auth, coroutineScope)
+        val communityRepository by lazy { CommunityRepository(applicationContext , db, userRepository, storage, coroutineScope) }
+
+        //val viewModelFactory = ViewModelFactory(communityRepository, userRepository)
         val userData = userRepository.getCurrentUser()
 
         // Create viewmodel instances
         val signInViewModel = SignInViewModel()
-        val communityViewModel: CommunityViewModel = ViewModelProvider(this, viewModelFactory)[CommunityViewModel::class.java]
-        val adminViewModel: AdminViewModel = ViewModelProvider(this, viewModelFactory)[AdminViewModel::class.java]
+
+        val communityViewModel by lazy { CommunityViewModel(communityRepository, userRepository)}
+        val adminViewModel by lazy { AdminViewModel(communityRepository) }
+
         // Determine the start destination
         val startDestination = if (signInViewModel.getSignedInUser() != null) "home" else "welcome"
 
@@ -209,15 +212,13 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable("home") {
-                            val isAdmin by userRepository.isAdmin.collectAsState()
                             val pendingCount by adminViewModel.pendingCount
 
                             HomeScreen(
-                                isAdmin = isAdmin,
-                                pendingCount = pendingCount,
-                                userData = userData,
+                                userRepository = userRepository,
                                 onNavigateToProfile = { navController.navigate("profile") },
                                 onNavigateToAdmin = { navController.navigate("admin_console") },
+                                adminViewModel = adminViewModel,
                                 navigateToCommunities = { navController.navigate("community_list") },
                                 )
                         }
@@ -244,8 +245,24 @@ class MainActivity : ComponentActivity() {
                             CommunitiesScreen(
                                 navigateBack = {navController.popBackStack()},
                                 navigateToAddCommunity = {navController.navigate("request_community")},
-                                communityViewModel = communityViewModel
+                                communityViewModel = communityViewModel,
+                                navigateToCommunityDetails = { community ->
+                                    navController.navigate("community_details/${community.name}")
+                                }
+                            )
+                        }
+
+                        composable("community_details/{communityName}") { backStackEntry ->
+                            val communityName = backStackEntry.arguments?.getString("communityName")
+                            val community = communityViewModel.getCommunityByName(communityName)
+
+                            if (community != null) {
+                                CommunityDetails(
+                                    community = community,
+                                    navigateBack = {navController.popBackStack()}
                                 )
+                            }
+
                         }
 
                         composable("request_community"){

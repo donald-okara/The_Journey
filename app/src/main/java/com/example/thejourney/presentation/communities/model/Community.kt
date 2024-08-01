@@ -22,6 +22,11 @@ data class Community(
     @set:PropertyName("status")
     var status: String = "Pending",
 
+    @get:PropertyName("aboutUs")
+    @set:PropertyName("aboutUs")
+    var aboutUs: String? = null,
+
+
     @get:PropertyName("communityBannerUrl")
     @set:PropertyName("communityBannerUrl")
     var communityBannerUrl: String? = null,

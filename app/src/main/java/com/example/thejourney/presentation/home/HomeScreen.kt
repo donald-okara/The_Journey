@@ -24,6 +24,7 @@ import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -59,23 +60,27 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.thejourney.R
 import com.example.thejourney.domain.CommunityRepository
+import com.example.thejourney.domain.UserRepository
 import com.example.thejourney.presentation.admin.AdminViewModel
 import com.example.thejourney.presentation.sign_in.SignInViewModel
 import com.example.thejourney.presentation.sign_in.UserData
 import com.example.thejourney.ui.theme.TheJourneyTheme
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
-    userData: UserData?,
     onNavigateToProfile: () -> Unit,
     onNavigateToAdmin: () -> Unit,
-    isAdmin: Boolean,
-    pendingCount: Int,
+    userRepository: UserRepository,
+    adminViewModel: AdminViewModel,
     navigateToCommunities: () -> Unit,
 ) {
+    val pendingCount by adminViewModel.pendingCount
+    val userData = userRepository.getCurrentUser()
+    val isAdmin by userRepository.isAdmin.collectAsState()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     val scope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -91,6 +96,7 @@ fun HomeScreen(
                     navigateToCommunities = navigateToCommunities,
                     pendingCount = pendingCount,
                     isAdmin = isAdmin,
+                    drawerState = drawerState,
                     userData = userData
                 )
             }
@@ -122,8 +128,11 @@ fun HomeDrawerContent(
     onNavigateToProfile: () -> Unit,
     onNavigateToAdmin: () -> Unit,
     navigateToCommunities: () -> Unit,
+    drawerState: DrawerState,
     pendingCount : Int
 ){
+    val coroutineScope = rememberCoroutineScope()
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -144,7 +153,12 @@ fun HomeDrawerContent(
         DrawerItem(
             itemIcon = Icons.Outlined.Groups,
             label = R.string.communities,
-            modifier = modifier.clickable { navigateToCommunities() }
+            modifier = modifier.clickable {
+                coroutineScope.launch {
+                    navigateToCommunities()
+                    drawerState.close()
+                }
+            }
         )
 
         if (isAdmin){
@@ -152,7 +166,13 @@ fun HomeDrawerContent(
                 itemIcon = Icons.Outlined.Shield,
                 label = R.string.admin_panel,
                 badgeCount = pendingCount,
-                modifier = modifier.clickable { onNavigateToAdmin() })
+                modifier = modifier.clickable {
+                    coroutineScope.launch {
+                        drawerState.close()
+                        onNavigateToAdmin()
+                    }
+                }
+            )
         }
 
     }
@@ -181,7 +201,7 @@ fun DrawerHeader(
                 imageVector = Icons.Filled.Person,
                 contentDescription = "Profile picture",
                 modifier
-                    .size(200.dp)
+                    .size(64.dp)
                     .clip(CircleShape),
             )
         }
