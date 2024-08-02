@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.Shield
+import androidx.compose.material.icons.outlined.Workspaces
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -80,7 +81,7 @@ fun HomeScreen(
 ) {
     val pendingCount by adminViewModel.pendingCount
     val userData = userRepository.getCurrentUser()
-    val isAdmin by userRepository.isAdmin.collectAsState()
+    val isAdmin by adminViewModel.isAdmin.collectAsState()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     val scope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -151,7 +152,7 @@ fun HomeDrawerContent(
         Spacer(modifier = modifier.height(16.dp))
 
         DrawerItem(
-            itemIcon = Icons.Outlined.Groups,
+            itemIcon = Icons.Outlined.Workspaces,
             label = R.string.communities,
             modifier = modifier.clickable {
                 coroutineScope.launch {

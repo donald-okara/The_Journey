@@ -34,6 +34,39 @@ class CommunityRepository(
         }
     }
 
+    suspend fun addMembers(
+        userId: String,
+        communityId: String,
+        role: String = "member"
+    ){
+        try {
+            // Fetch the current community document
+            val communityDoc = db.collection("communities").document(communityId).get().await()
+            val community = communityDoc.toObject(Community::class.java)
+
+            community?.let {
+                // Update the members list
+                val updatedMembers = it.members.toMutableList().apply {
+                    // Add the user with the specified role if not already a member
+                    if (none { member -> member.keys.first() == userId }) {
+                        add(mapOf(userId to role))
+                    }
+                }
+
+                // Update the community document with the modified members list
+                db.collection("communities").document(communityId)
+                    .update("members", updatedMembers)
+                    .await()
+
+                Log.d("CommunityRepository", "Added member $userId to community $communityId with role $role")
+            } ?: run {
+                Log.e("CommunityRepository", "Community $communityId not found")
+            }
+        } catch (e: Exception) {
+            Log.e("CommunityRepository", "Error adding member $userId to community $communityId", e)
+        }
+    }
+
     private suspend fun updateCommunityCounts() {
         // Fetch the pending communities and update the count
         val pendingCommunities = getPendingCommunities()
@@ -59,10 +92,13 @@ class CommunityRepository(
             }
 
             // Upload images and get URLs
-            val bannerUrl = bannerUri?.let { uploadImageToStorage(it, "communities/banners/$communityName.jpg") }
-            val profileUrl = profileUri?.let { uploadImageToStorage(it, "communities/profileImages/$communityName.jpg") }
+            val bannerUrl = bannerUri?.let { uploadImageToStorage(it, "communities/banners/${user.userId}.jpg") }
+            val profileUrl = profileUri?.let { uploadImageToStorage(it, "communities/profileImages/${user.userId}.jpg") }
+
+            val communityId = db.collection("communities").document().id // Generate a new ID
 
             val community = Community(
+                id = communityId, // Populate the id field
                 name = communityName,
                 type = communityType,
                 members = members,
@@ -72,13 +108,13 @@ class CommunityRepository(
             )
 
             try {
-                db.collection("communities").document(communityName)
+                db.collection("communities").document(communityId)
                     .set(community)
                     .await()
 
                 members.forEach { member ->
                     val (userId, role) = member.entries.first()
-                    userRepository.updateUserCommunities(userId, communityName, role)
+                    userRepository.updateUserCommunities(userId, communityId, role)
                 }
             } catch (e: Exception) {
                 Log.w("CommunityRepository", "Error adding document", e)
@@ -87,6 +123,7 @@ class CommunityRepository(
             Log.e("CommunityRepository", "User not authenticated or username is null")
         }
     }
+
 
     private suspend fun uploadImageToStorage(uri: Uri, path: String): String? {
         return try {

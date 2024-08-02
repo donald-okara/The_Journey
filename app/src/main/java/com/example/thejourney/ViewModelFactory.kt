@@ -18,7 +18,7 @@ class ViewModelFactory(
                 CommunityViewModel(communityRepository, userRepository) as T
             }
             modelClass.isAssignableFrom(AdminViewModel::class.java) -> {
-                AdminViewModel(communityRepository) as T
+                AdminViewModel(userRepository, communityRepository) as T
             }
             else -> throw IllegalArgumentException("Unknown ViewModel class")
         }

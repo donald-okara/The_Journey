@@ -6,14 +6,21 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.thejourney.domain.CommunityRepository
+import com.example.thejourney.domain.UserRepository
 import com.example.thejourney.presentation.communities.model.Community
+import com.example.thejourney.presentation.sign_in.UserData
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 
-class AdminViewModel(private val communityRepository: CommunityRepository) : ViewModel() {
+class AdminViewModel(
+    private val userRepository: UserRepository,
+    private val communityRepository: CommunityRepository
+) : ViewModel() {
     private val db = communityRepository.db
 
     private val _pendingState = MutableStateFlow<CommunityState>(CommunityState.Loading)
@@ -21,6 +28,9 @@ class AdminViewModel(private val communityRepository: CommunityRepository) : Vie
 
     private val _liveState = MutableStateFlow<CommunityState>(CommunityState.Loading)
     val liveState: StateFlow<CommunityState> = _liveState
+
+    private val _isAdmin = MutableStateFlow(false)
+    val isAdmin: StateFlow<Boolean> get() = _isAdmin
 
     private val _rejectedState = MutableStateFlow<CommunityState>(CommunityState.Loading)
     val rejectedState: StateFlow<CommunityState> = _rejectedState
@@ -30,6 +40,9 @@ class AdminViewModel(private val communityRepository: CommunityRepository) : Vie
         fetchPendingRequests()
         fetchLiveCommunities()
         fetchRejectedCommunities()
+        viewModelScope.launch {
+            fetchAdminStatus()
+        }
     }
 
 
@@ -44,6 +57,25 @@ class AdminViewModel(private val communityRepository: CommunityRepository) : Vie
             } catch (e: Exception) {
                 _pendingState.value = CommunityState.Error("Failed to fetch pending requests: ${e.message}")
             }
+        }
+    }
+
+    // Function to check if the current user is an admin
+    private suspend fun fetchAdminStatus() {
+        val userId = userRepository.getCurrentUserId()
+        if (userId != null) {
+            withContext(Dispatchers.IO) {
+                try {
+                    val userDoc = db.collection("users").document(userId).get().await()
+                    val userData = userDoc.toObject(UserData::class.java)
+                    _isAdmin.value = userData?.admin ?: false
+                } catch (e: Exception) {
+                    Log.e("UserRepository", "Error fetching admin status", e)
+                    _isAdmin.value = false
+                }
+            }
+        } else {
+            _isAdmin.value = false
         }
     }
 
@@ -77,7 +109,7 @@ class AdminViewModel(private val communityRepository: CommunityRepository) : Vie
             try {
                 Log.d("AdminViewModel", "Attempting to approve community with ID: ${request.name}")
 
-                db.collection("communities").document(request.name)
+                db.collection("communities").document(request.id)
                     .update("status", "Live")
                     .await()
 

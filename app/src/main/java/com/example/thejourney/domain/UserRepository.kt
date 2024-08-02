@@ -30,7 +30,7 @@ class UserRepository(
 
     }
 
-    private fun getCurrentUserId(): String? {
+    fun getCurrentUserId(): String? {
         return auth.currentUser?.uid
     }
 
@@ -70,7 +70,9 @@ class UserRepository(
                 dateOfBirth = null,
                 biography = null,
                 biographyBackgroundImageUrl = null,
-                communities = emptyList()
+                communities = emptyList(),
+                spaces = emptyList(),
+                spacesApproval = emptyList()
             )
         }
     }

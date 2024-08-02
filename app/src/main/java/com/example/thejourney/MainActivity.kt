@@ -62,14 +62,10 @@ class MainActivity : ComponentActivity() {
         val userRepository = UserRepository(db, auth, coroutineScope)
         val communityRepository by lazy { CommunityRepository(applicationContext , db, userRepository, storage, coroutineScope) }
 
-        //val viewModelFactory = ViewModelFactory(communityRepository, userRepository)
-        val userData = userRepository.getCurrentUser()
-
         // Create viewmodel instances
         val signInViewModel = SignInViewModel()
-
         val communityViewModel by lazy { CommunityViewModel(communityRepository, userRepository)}
-        val adminViewModel by lazy { AdminViewModel(communityRepository) }
+        val adminViewModel by lazy { AdminViewModel(userRepository = userRepository , communityRepository = communityRepository) }
 
         // Determine the start destination
         val startDestination = if (signInViewModel.getSignedInUser() != null) "home" else "welcome"
@@ -212,8 +208,6 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable("home") {
-                            val pendingCount by adminViewModel.pendingCount
-
                             HomeScreen(
                                 userRepository = userRepository,
                                 onNavigateToProfile = { navController.navigate("profile") },
@@ -247,22 +241,9 @@ class MainActivity : ComponentActivity() {
                                 navigateToAddCommunity = {navController.navigate("request_community")},
                                 communityViewModel = communityViewModel,
                                 navigateToCommunityDetails = { community ->
-                                    navController.navigate("community_details/${community.name}")
+                                    navController.navigate("community_details/${community.id}")
                                 }
                             )
-                        }
-
-                        composable("community_details/{communityName}") { backStackEntry ->
-                            val communityName = backStackEntry.arguments?.getString("communityName")
-                            val community = communityViewModel.getCommunityByName(communityName)
-
-                            if (community != null) {
-                                CommunityDetails(
-                                    community = community,
-                                    navigateBack = {navController.popBackStack()}
-                                )
-                            }
-
                         }
 
                         composable("request_community"){
@@ -271,6 +252,24 @@ class MainActivity : ComponentActivity() {
                                 navigateBack = {navController.popBackStack()},
                             )
                         }
+
+                        composable("community_details/{communityId}") { backStackEntry ->
+                            val communityId = backStackEntry.arguments?.getString("communityId")
+                            val community = communityId?.let {
+                                communityViewModel.getCommunityById(
+                                    it
+                                )
+                            }
+                            if (community != null) {
+                                CommunityDetails(
+                                    community = community,
+                                    userRepository = userRepository,
+                                    communityViewModel = communityViewModel,
+                                    navigateBack = { navController.popBackStack() }
+                                )
+                            }
+                        }
+
                     }
                 }
             }

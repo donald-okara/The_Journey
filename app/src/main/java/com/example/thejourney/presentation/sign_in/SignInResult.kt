@@ -1,5 +1,6 @@
 package com.example.thejourney.presentation.sign_in
 
+import com.example.thejourney.presentation.communities.spaces.model.Space
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.PropertyName
 
@@ -54,8 +55,31 @@ data class UserData(
 
     @get:PropertyName("communities")
     @set:PropertyName("communities")
-    var communities: List<Map<String /*community id*/, String? /*role*/>>
+    var communities: List<Map<String /*community id*/, String? /*role*/>>,
+
+    @get:PropertyName("spaces")
+    @set:PropertyName("spaces")
+    var spaces: List<Map<String /*space id*/, String? /*role*/, >>,
+
+    @get:PropertyName("spacesApproval")
+    @set:PropertyName("spacesApproval")
+    var spacesApproval: List<Map<String /*space id*/, String? /*ApprovalStatus*/, >>,
 ){
-    constructor() : this("", null, null, false, null, null, null, null, null, null, null, emptyList())
+    constructor() : this(
+        "",
+        null,
+        null,
+        false,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        emptyList(),
+        emptyList(),
+        emptyList()
+    )
 }
 
