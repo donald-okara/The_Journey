@@ -82,7 +82,7 @@ class CommunityViewModel(
                 }
 
                 communityRepository.addMembers(
-                    userId = user.userId ?: "",
+                    userId = user.userId,
                     communityId = community.id
                 )
             } catch (e: Exception) {
