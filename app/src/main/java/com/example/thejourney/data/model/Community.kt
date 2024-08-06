@@ -1,5 +1,5 @@
 
-package com.example.thejourney.presentation.communities.model
+package com.example.thejourney.data.model
 
 import com.google.firebase.firestore.PropertyName
 

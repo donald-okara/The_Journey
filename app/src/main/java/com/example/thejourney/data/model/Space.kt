@@ -1,7 +1,7 @@
-package com.example.thejourney.presentation.communities.spaces.model
+package com.example.thejourney.data.model
 
 import com.google.firebase.firestore.PropertyName
-// Comment
+
 data class Space (
     @get:PropertyName("id")
     @set:PropertyName("id")

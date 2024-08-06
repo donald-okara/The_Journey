@@ -1,6 +1,5 @@
-package com.example.thejourney.presentation.sign_in
+package com.example.thejourney.data.model
 
-import com.example.thejourney.presentation.communities.spaces.model.Space
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.PropertyName
 
