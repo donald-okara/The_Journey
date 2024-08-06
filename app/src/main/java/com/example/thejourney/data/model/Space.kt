@@ -15,7 +15,7 @@ data class Space (
     @set:PropertyName("parentCommunity")
     var parentCommunity : String,
 
-    @get:PropertyName("ProfileUri")
+    @get:PropertyName("profileUri")
     @set:PropertyName("profileUri")
     var profileUri : String?,
 
@@ -31,7 +31,7 @@ data class Space (
     @set:PropertyName("approvalStatus")
     var approvalStatus : String,
 
-    @PropertyName("membersRequireApproval")
+    @get:PropertyName("membersRequireApproval")
     @set:PropertyName("membersRequireApproval")
     var membersRequireApproval : Boolean,
 

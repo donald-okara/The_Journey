@@ -2,17 +2,13 @@ package com.example.thejourney.presentation.communities
 
 import android.net.Uri
 import android.util.Log
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.thejourney.domain.CommunityRepository
 import com.example.thejourney.domain.UserRepository
 import com.example.thejourney.presentation.admin.CommunityState
-import com.example.thejourney.presentation.communities.model.Community
-import com.example.thejourney.presentation.sign_in.UserData
+import com.example.thejourney.data.model.Community
+import com.example.thejourney.data.model.UserData
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -58,8 +54,7 @@ class CommunityViewModel(
     }
 
     // Function to get a community by its ID
-    fun getCommunityById(communityId: String?): Community? {
-        if (communityId == null) return null
+    fun getCommunityById(communityId: String): Community? {
 
         val state = _liveState.value
         return if (state is CommunityState.Success) {
@@ -70,13 +65,12 @@ class CommunityViewModel(
     }
 
     fun onJoinCommunity(user : UserData, community: Community){
-
         viewModelScope.launch {
             try {
                 user.userId.let {
                     userRepository.updateUserCommunities(
                         userId = it,
-                        communityId = community.name,
+                        communityId = community.id,
                         role = "member"
                     )
                 }
@@ -86,7 +80,7 @@ class CommunityViewModel(
                     communityId = community.id
                 )
             } catch (e: Exception) {
-                Log.e("CommunityViewModel", "Community request failed: ${e.message}")
+                Log.e("CommunityViewModel", "Community join failed: ${e.message}")
             }
 
         }

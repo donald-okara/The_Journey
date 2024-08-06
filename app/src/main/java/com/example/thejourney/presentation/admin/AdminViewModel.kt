@@ -2,14 +2,12 @@ package com.example.thejourney.presentation.admin
 
 import android.util.Log
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.thejourney.domain.CommunityRepository
 import com.example.thejourney.domain.UserRepository
-import com.example.thejourney.presentation.communities.model.Community
-import com.example.thejourney.presentation.sign_in.UserData
-import com.google.firebase.firestore.FirebaseFirestore
+import com.example.thejourney.data.model.Community
+import com.example.thejourney.data.model.UserData
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

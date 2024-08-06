@@ -30,7 +30,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
@@ -69,8 +68,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
-import com.example.thejourney.presentation.sign_in.UserData
-import com.google.firebase.storage.FirebaseStorage
+import com.example.thejourney.data.model.UserData
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -585,7 +583,7 @@ fun UserInputChip(
             Image(
                 painter = rememberAsyncImagePainter(model = user.profilePictureUrl),
                 contentDescription = null,
-                modifier = Modifier
+                modifier = modifier
                     .size(24.dp)
                     .clip(CircleShape),
                 contentScale = ContentScale.Crop

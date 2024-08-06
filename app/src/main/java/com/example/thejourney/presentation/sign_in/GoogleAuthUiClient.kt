@@ -4,6 +4,8 @@ import android.content.Intent
 import android.content.IntentSender
 import android.util.Log
 import com.example.thejourney.R
+import com.example.thejourney.data.model.SignInResult
+import com.example.thejourney.data.model.UserData
 import com.google.android.gms.auth.api.identity.BeginSignInRequest
 import com.google.android.gms.auth.api.identity.SignInClient
 import com.google.firebase.auth.FirebaseUser
@@ -64,7 +66,9 @@ class GoogleAuthUiClient(
                         dateOfBirth = null,
                         biography = null,
                         biographyBackgroundImageUrl = null,
-                        communities = emptyList()
+                        communities = emptyList(),
+                        spaces = emptyList(),
+                        spacesApproval = emptyList()
                     )
                 },
                 errorMessage = null
@@ -103,7 +107,9 @@ class GoogleAuthUiClient(
             dateOfBirth = null,
             biography = null,
             biographyBackgroundImageUrl = null,
-            communities = emptyList()
+            communities = emptyList(),
+            spaces = emptyList(),
+            spacesApproval = emptyList()
         )
 
         if (!documentSnapshot.exists()) {

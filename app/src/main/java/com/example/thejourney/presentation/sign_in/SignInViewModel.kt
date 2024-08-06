@@ -3,11 +3,12 @@ package com.example.thejourney.presentation.sign_in
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.thejourney.data.model.SignInResult
+import com.example.thejourney.data.model.UserData
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -124,7 +125,9 @@ class SignInViewModel : ViewModel() {
                 dateOfBirth = null,
                 biography = null,
                 biographyBackgroundImageUrl = null,
-                communities = emptyList()
+                communities = emptyList(),
+                spaces = emptyList(),
+                spacesApproval = emptyList()
 
             )
         }
@@ -144,7 +147,9 @@ class SignInViewModel : ViewModel() {
             dateOfBirth = null,
             biography = null,
             biographyBackgroundImageUrl = null,
-            communities = emptyList()
+            communities = emptyList(),
+            spaces = emptyList(),
+            spacesApproval = emptyList()
         )
 
         if (!documentSnapshot.exists()) {

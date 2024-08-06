@@ -2,6 +2,7 @@ package com.example.thejourney
 
 import WelcomeScreen
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -21,6 +22,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.thejourney.domain.CommunityRepository
+import com.example.thejourney.domain.SpaceRepository
 import com.example.thejourney.domain.UserRepository
 import com.example.thejourney.presentation.admin.AdminCommunityView
 import com.example.thejourney.presentation.admin.AdminDashboard
@@ -35,6 +37,8 @@ import com.example.thejourney.presentation.sign_in.EmailSignInScreen
 import com.example.thejourney.presentation.sign_in.EmailSignUpScreen
 import com.example.thejourney.presentation.sign_in.GoogleAuthUiClient
 import com.example.thejourney.presentation.sign_in.SignInViewModel
+import com.example.thejourney.presentation.spaces.RequestSpaceScreen
+import com.example.thejourney.presentation.spaces.SpacesViewModel
 import com.example.thejourney.ui.theme.TheJourneyTheme
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.firebase.auth.FirebaseAuth
@@ -61,11 +65,12 @@ class MainActivity : ComponentActivity() {
         val auth = FirebaseAuth.getInstance()
         val userRepository = UserRepository(db, auth, coroutineScope)
         val communityRepository by lazy { CommunityRepository(applicationContext , db, userRepository, storage, coroutineScope) }
-
+        val spaceRepository by lazy { SpaceRepository(context = applicationContext ,userRepository = userRepository, communityRepository = communityRepository, coroutineScope= coroutineScope) }
         // Create viewmodel instances
         val signInViewModel = SignInViewModel()
         val communityViewModel by lazy { CommunityViewModel(communityRepository, userRepository)}
         val adminViewModel by lazy { AdminViewModel(userRepository = userRepository , communityRepository = communityRepository) }
+        val spacesViewModel by lazy { SpacesViewModel(userRepository = userRepository, spaceRepository = spaceRepository) }
 
         // Determine the start destination
         val startDestination = if (signInViewModel.getSignedInUser() != null) "home" else "welcome"
@@ -265,11 +270,31 @@ class MainActivity : ComponentActivity() {
                                     community = community,
                                     userRepository = userRepository,
                                     communityViewModel = communityViewModel,
-                                    navigateBack = { navController.popBackStack() }
+                                    navigateBack = { navController.popBackStack() },
+                                    spacesViewModel = spacesViewModel,
+                                    onNavigateToSpace = {space -> navController.navigate("space_details/${space.id}")},
+                                    onNavigateToAddSpace = {navController.navigate("request_space/${community.id}")},
                                 )
                             }
                         }
 
+                        composable("request_space/{communityId}") { backStackEntry ->
+                            val communityId = backStackEntry.arguments?.getString("communityId")
+                            val community = communityId?.let {
+                                communityViewModel.getCommunityById(
+                                    it
+                                )
+                            }
+                            if (community != null) {
+                                RequestSpaceScreen(
+                                    viewModel = spacesViewModel,
+                                    navigateBack = { navController.popBackStack() },
+                                    community = community
+                                )
+                            }else {
+                                Log.e("CommunityDetails", "Community is null for communityId: $communityId")
+                            }
+                        }
                     }
                 }
             }

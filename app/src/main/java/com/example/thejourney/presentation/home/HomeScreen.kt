@@ -19,11 +19,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.outlined.Workspaces
 import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
@@ -43,7 +41,6 @@ import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,13 +57,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.thejourney.R
-import com.example.thejourney.domain.CommunityRepository
 import com.example.thejourney.domain.UserRepository
 import com.example.thejourney.presentation.admin.AdminViewModel
-import com.example.thejourney.presentation.sign_in.SignInViewModel
-import com.example.thejourney.presentation.sign_in.UserData
+import com.example.thejourney.data.model.UserData
 import com.example.thejourney.ui.theme.TheJourneyTheme
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
