@@ -44,20 +44,6 @@ class AdminViewModel(
     }
 
 
-
-    fun fetchPendingRequests() {
-        viewModelScope.launch {
-            _pendingState.value = CommunityState.Loading
-            try {
-                val requests = communityRepository.getPendingCommunities()
-                _pendingState.value = CommunityState.Success(requests)
-                pendingCount.intValue = requests.size // Update count based on the list size
-            } catch (e: Exception) {
-                _pendingState.value = CommunityState.Error("Failed to fetch pending requests: ${e.message}")
-            }
-        }
-    }
-
     // Function to check if the current user is an admin
     suspend fun fetchAdminStatus() {
         val userId = userRepository.getCurrentUserId()
@@ -77,12 +63,29 @@ class AdminViewModel(
         }
     }
 
+    fun fetchPendingRequests() {
+        viewModelScope.launch {
+            _pendingState.value = CommunityState.Loading
+            try {
+                communityRepository.observePendingRequests()
+                    .collect { requests ->
+                        _pendingState.value = CommunityState.Success(requests)
+                        pendingCount.intValue = requests.size // Update count based on the list size
+                    }
+            } catch (e: Exception) {
+                _pendingState.value = CommunityState.Error("Failed to fetch pending requests: ${e.message}")
+            }
+        }
+    }
+
     fun fetchLiveCommunities() {
         viewModelScope.launch {
             _liveState.value = CommunityState.Loading
             try {
-                val communities = communityRepository.getLiveCommunities()
-                _liveState.value = CommunityState.Success(communities)
+                communityRepository.observeLiveRequests()
+                    .collect { requests ->
+                        _liveState.value = CommunityState.Success(requests)
+                    }
             } catch (e: Exception) {
                 _liveState.value = CommunityState.Error("Failed to fetch live communities: ${e.message}")
             }
@@ -93,9 +96,11 @@ class AdminViewModel(
         viewModelScope.launch {
             _rejectedState.value = CommunityState.Loading
             try {
-                val communities = communityRepository.getRejectedCommunities()
-                _rejectedState.value = CommunityState.Success(communities)
-            } catch (e: Exception) {
+                communityRepository.observeRejectedRequests()
+                    .collect { requests ->
+                        _rejectedState.value = CommunityState.Success(requests)
+                    }
+            }catch (e: Exception) {
                 _rejectedState.value = CommunityState.Error("Failed to fetch rejected communities: ${e.message}")
             }
         }

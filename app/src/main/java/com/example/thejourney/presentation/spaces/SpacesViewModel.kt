@@ -81,14 +81,10 @@ class SpacesViewModel(
 
     fun fetchLiveSpacesByCommunity(communityId: String) {
         viewModelScope.launch {
-            _liveSpacesState.value = SpaceState.Loading
-            try {
-                val spaces = spaceRepository.getLiveSpacesByCommunity(communityId)
-                _liveSpacesState.value = SpaceState.Success(spaces)
-            } catch (e: Exception) {
-                Log.e("SpacesViewModel", "Error live fetching spaces for community $communityId: ${e.message}")
-                _liveSpacesState.value = SpaceState.Error(e.message ?: "Unknown error")
-            }
+            spaceRepository.observeLiveSpacesByCommunity(communityId)
+                .collect { spaces ->
+                    _liveSpacesState.value = SpaceState.Success(spaces)
+                }
         }
     }
 

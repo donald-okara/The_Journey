@@ -7,8 +7,12 @@ import androidx.compose.runtime.mutableIntStateOf
 import com.example.thejourney.data.model.Community
 import com.example.thejourney.data.model.UserData
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.io.File
@@ -24,15 +28,80 @@ class CommunityRepository(
 ) {
     private val pendingCount = mutableIntStateOf(0)
 
+    val firestore = FirebaseFirestore.getInstance()
+
     init {
         // Initialize community states when the repository is created
         coroutineScope.launch {
             updateCommunityCounts()
-            getPendingCommunities()
-            getRejectedCommunities()
-            getLiveCommunities()
         }
     }
+
+    fun observeCommunityMembers(communityId: String): Query {
+        return firestore.collection("communities")
+            .document(communityId)
+            .collection("members")
+    }
+
+    // Repository
+    fun observePendingRequests(): Flow<List<Community>> = callbackFlow {
+        val listenerRegistration = firestore.collection("communities")
+            .whereEqualTo("status", "Pending")
+            .addSnapshotListener { snapshot, exception ->
+                if (exception != null) {
+                    close(exception)
+                    return@addSnapshotListener
+                }
+
+                val communities = snapshot?.documents?.mapNotNull { doc ->
+                    doc.toObject(Community::class.java)
+                } ?: emptyList()
+
+                trySend(communities).isSuccess
+            }
+
+        awaitClose { listenerRegistration.remove() }
+    }
+
+    fun observeLiveRequests(): Flow<List<Community>> = callbackFlow {
+        val listenerRegistration = firestore.collection("communities")
+            .whereEqualTo("status", "Live")
+            .addSnapshotListener { snapshot, exception ->
+                if (exception != null) {
+                    close(exception)
+                    return@addSnapshotListener
+                }
+
+                val communities = snapshot?.documents?.mapNotNull { doc ->
+                    doc.toObject(Community::class.java)
+                } ?: emptyList()
+
+                trySend(communities).isSuccess
+            }
+
+        awaitClose { listenerRegistration.remove() }
+    }
+
+    fun observeRejectedRequests(): Flow<List<Community>> = callbackFlow {
+        val listenerRegistration = firestore.collection("communities")
+            .whereEqualTo("status", "Rejected")
+            .addSnapshotListener { snapshot, exception ->
+                if (exception != null) {
+                    close(exception)
+                    return@addSnapshotListener
+                }
+
+                val communities = snapshot?.documents?.mapNotNull { doc ->
+                    doc.toObject(Community::class.java)
+                } ?: emptyList()
+
+                trySend(communities).isSuccess
+            }
+
+        awaitClose { listenerRegistration.remove() }
+    }
+
+
 
     suspend fun requestNewCommunity(
         communityName: String,

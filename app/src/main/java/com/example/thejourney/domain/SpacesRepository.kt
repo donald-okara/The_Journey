@@ -7,7 +7,11 @@ import androidx.compose.runtime.mutableIntStateOf
 import com.example.thejourney.data.model.Community
 import com.example.thejourney.data.model.Space
 import com.example.thejourney.data.model.UserData
+import com.google.firebase.firestore.CollectionReference
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
@@ -18,6 +22,7 @@ class SpaceRepository(
     coroutineScope: CoroutineScope
 ) {
 
+    val firestore = communityRepository.firestore
     init {
         coroutineScope.launch{
             getLiveSpaces()
@@ -30,18 +35,29 @@ class SpaceRepository(
     private val pendingCount = mutableIntStateOf(0)
     val db = communityRepository.db
 
-    suspend fun getLiveSpacesByCommunity(communityId: String): List<Space> {
-        return try {
-            val snapshot = db.collection("spaces")
-                .whereEqualTo("parentCommunity", communityId)
-                .whereEqualTo("approvalStatus", "Live")
-                .get()
-                .await()
-            snapshot.toObjects(Space::class.java)
-        } catch (e: Exception) {
-            Log.e("SpacesRepository", "Error fetching live spaces for community $communityId", e)
-            emptyList()
-        }
+    fun observeLiveSpacesByCommunity(communityId: String): Flow<List<Space>> = callbackFlow {
+        val listenerRegistration = firestore.collection("spaces")
+            .whereEqualTo("communityId", communityId)
+            .addSnapshotListener { snapshot, exception ->
+                if (exception != null) {
+                    close(exception)
+                    return@addSnapshotListener
+                }
+
+                val spaces = snapshot?.documents?.mapNotNull { doc ->
+                    doc.toObject(Space::class.java)
+                } ?: emptyList()
+
+                trySend(spaces).isSuccess
+            }
+
+        awaitClose { listenerRegistration.remove() }
+    }
+
+    fun getLiveSpacesByCommunity(communityId: String): CollectionReference {
+        return firestore.collection("communities")
+            .document(communityId)
+            .collection("spaces")
     }
 
     suspend fun getPendingSpacesByCommunity(communityId: String): List<Space> {

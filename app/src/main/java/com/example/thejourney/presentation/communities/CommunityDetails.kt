@@ -80,15 +80,11 @@ fun CommunityDetails(
     onNavigateToApproveSpaces: () -> Unit
 ) {
     val user = userRepository.getCurrentUser()
-    val isJoined by communityViewModel.isJoined.collectAsState()
     val isLeader = community.members.any { it.containsKey(user?.userId) && it[user?.userId] == "leader" }
-    var refreshTrigger by remember { mutableStateOf(false) }
+    var refreshTrigger by remember { mutableStateOf(false) } // Trigger for refreshing data
 
     LaunchedEffect(community.id) {
-        if (user != null) {
-            communityViewModel.fetchIsJoined(user,community)
-        }
-        communityViewModel.fetchCommunityMembers(community.id)
+        communityViewModel.startObservingCommunityMembers(community.id)
         spacesViewModel.fetchLiveSpacesByCommunity(community.id)
         spacesViewModel.fetchPendingSpacesByCommunity(community.id)
         spacesViewModel.fetchRejectedSpacesByCommunity(community.id)

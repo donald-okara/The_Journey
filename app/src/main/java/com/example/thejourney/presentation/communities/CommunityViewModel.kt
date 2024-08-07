@@ -9,6 +9,7 @@ import com.example.thejourney.domain.UserRepository
 import com.example.thejourney.presentation.admin.CommunityState
 import com.example.thejourney.data.model.Community
 import com.example.thejourney.data.model.UserData
+import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,35 +31,43 @@ class CommunityViewModel(
     private val _communityMembers = MutableStateFlow<List<UserData>>(emptyList())
     val communityMembers: StateFlow<List<UserData>> = _communityMembers
 
-    private val _isJoined = MutableStateFlow<Result<Boolean>>(Result.Loading)
-    val isJoined: StateFlow<Result<Boolean>> = _isJoined.asStateFlow()
+    private var communityId: String? = null
+    private var listenerRegistration: ListenerRegistration? = null
 
     init {
         fetchUsers()
         fetchLiveCommunities()
     }
 
-    fun fetchCommunityMembers(communityId: String) {
+    // Call this function to start observing changes for a specific community
+    fun startObservingCommunityMembers(communityId: String) {
+        this.communityId = communityId
+        listenerRegistration?.remove() // Remove any existing listener
+        listenerRegistration = communityRepository.observeCommunityMembers(communityId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    Log.e("CommunityViewModel", "Error observing community members: ${error.message}")
+                    return@addSnapshotListener
+                }
+                if (snapshot != null) {
+                    val members = snapshot.toObjects(UserData::class.java)
+                    _communityMembers.value = members
+                }
+            }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        listenerRegistration?.remove() // Clean up the listener when ViewModel is cleared
+    }
+
+    private fun fetchCommunityMembers(communityId: String) {
         viewModelScope.launch {
             try {
                 val members = communityRepository.getCommunityMembers(communityId)
                 _communityMembers.value = members
             } catch (e: Exception) {
                 Log.e("CommunityViewModel", "Error fetching community members: ${e.message}")
-            }
-        }
-    }
-    fun fetchIsJoined(user: UserData, community: Community) {
-        viewModelScope.launch {
-            _isJoined.value = Result.Loading
-            try {
-                // Replace with your Firebase fetching logic
-                val joined = userRepository.fetchIsJoinedFromFirebase(user, community)
-                _isJoined.value = Result.Success(joined)
-            } catch (e: Exception) {
-                _isJoined.value = Result.Error(e)
-                Log.e("CommunityViewModel", "Failed to fetch join status: ${e.message}")
-
             }
         }
     }
@@ -76,8 +85,10 @@ class CommunityViewModel(
         viewModelScope.launch {
             _liveState.value = CommunityState.Loading
             try {
-                val communities = communityRepository.getLiveCommunities()
-                _liveState.value = CommunityState.Success(communities)
+                communityRepository.observeLiveRequests()
+                    .collect { requests ->
+                        _liveState.value = CommunityState.Success(requests)
+                    }
             } catch (e: Exception) {
                 _liveState.value = CommunityState.Error("Failed to fetch live communities: ${e.message}")
             }
@@ -110,6 +121,8 @@ class CommunityViewModel(
                     userId = user.userId,
                     communityId = community.id
                 )
+
+                fetchCommunityMembers(communityId = community.id)
 
             } catch (e: Exception) {
                 Log.e("CommunityViewModel", "Community join failed: ${e.message}")
