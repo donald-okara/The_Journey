@@ -37,6 +37,7 @@ import com.example.thejourney.presentation.sign_in.EmailSignInScreen
 import com.example.thejourney.presentation.sign_in.EmailSignUpScreen
 import com.example.thejourney.presentation.sign_in.GoogleAuthUiClient
 import com.example.thejourney.presentation.sign_in.SignInViewModel
+import com.example.thejourney.presentation.spaces.ApproveSpacesScreen
 import com.example.thejourney.presentation.spaces.RequestSpaceScreen
 import com.example.thejourney.presentation.spaces.SpacesViewModel
 import com.example.thejourney.ui.theme.TheJourneyTheme
@@ -274,6 +275,7 @@ class MainActivity : ComponentActivity() {
                                     spacesViewModel = spacesViewModel,
                                     onNavigateToSpace = {space -> navController.navigate("space_details/${space.id}")},
                                     onNavigateToAddSpace = {navController.navigate("request_space/${community.id}")},
+                                    onNavigateToApproveSpaces = {navController.navigate("approve_spaces_screen")}
                                 )
                             }
                         }
@@ -294,6 +296,16 @@ class MainActivity : ComponentActivity() {
                             }else {
                                 Log.e("CommunityDetails", "Community is null for communityId: $communityId")
                             }
+                        }
+
+                        composable("approve_spaces_screen"){
+                            val pendingCount by spacesViewModel.pendingCount
+
+                            ApproveSpacesScreen(
+                                viewModel = spacesViewModel,
+                                pendingCount = pendingCount,
+                                navigateBack = {navController.popBackStack()}
+                            )
                         }
                     }
                 }

@@ -105,7 +105,8 @@ fun CommunitiesScreenContent(
 
     Column(
         modifier = modifier
-            .fillMaxSize()
+            .fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally
 
     ){
         when (liveState) {

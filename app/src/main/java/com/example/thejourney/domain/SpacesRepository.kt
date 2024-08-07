@@ -28,13 +28,13 @@ class SpaceRepository(
     }
 
     private val pendingCount = mutableIntStateOf(0)
-    private val db = communityRepository.db
+    val db = communityRepository.db
 
     suspend fun getLiveSpacesByCommunity(communityId: String): List<Space> {
         return try {
             val snapshot = db.collection("spaces")
                 .whereEqualTo("parentCommunity", communityId)
-                .whereEqualTo("status", "Live")
+                .whereEqualTo("approvalStatus", "Live")
                 .get()
                 .await()
             snapshot.toObjects(Space::class.java)
@@ -43,6 +43,36 @@ class SpaceRepository(
             emptyList()
         }
     }
+
+    suspend fun getPendingSpacesByCommunity(communityId: String): List<Space> {
+        return try {
+            val snapshot = db.collection("spaces")
+                .whereEqualTo("parentCommunity", communityId)
+                .whereEqualTo("approvalStatus", "Pending")
+                .get()
+                .await()
+            snapshot.toObjects(Space::class.java)
+        } catch (e: Exception) {
+            Log.e("SpacesRepository", "Error fetching pending spaces for community $communityId", e)
+            emptyList()
+        }
+    }
+
+    suspend fun getRejectedSpacesByCommunity(communityId: String): List<Space> {
+        return try {
+            val snapshot = db.collection("spaces")
+                .whereEqualTo("parentCommunity", communityId)
+                .whereEqualTo("approvalStatus", "Rejected")
+                .get()
+                .await()
+            snapshot.toObjects(Space::class.java)
+        } catch (e: Exception) {
+            Log.e("SpacesRepository", "Error fetching rejected spaces for community $communityId", e)
+            emptyList()
+        }
+    }
+
+
 
     suspend fun requestNewSpace(
         parentCommunityId : String,
@@ -85,7 +115,7 @@ class SpaceRepository(
                 bannerUri = bannerUrl,
                 profileUri = profileUrl,
                 description = description,
-                approvalStatus = "pending",
+                approvalStatus = "Pending",
                 membersRequireApproval = membersRequireApproval,
                 members = members,
                 membersApprovalStatus = emptyList()
