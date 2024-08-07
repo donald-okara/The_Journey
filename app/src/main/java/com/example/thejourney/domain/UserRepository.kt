@@ -1,6 +1,7 @@
 package com.example.thejourney.domain
 
 import android.util.Log
+import com.example.thejourney.data.model.Community
 import com.example.thejourney.data.model.Space
 import com.example.thejourney.data.model.UserData
 import com.google.firebase.auth.FirebaseAuth
@@ -103,6 +104,19 @@ class UserRepository(
         }
     }
 
+    suspend fun fetchUsersByIds(userIds: List<String>): List<UserData> {
+        return try {
+            val users = db.collection("users")
+                .whereIn("userId", userIds)
+                .get()
+                .await()
+            users.toObjects(UserData::class.java)
+        } catch (e: Exception) {
+            Log.e("UserRepository", "Error fetching users by IDs", e)
+            emptyList()
+        }
+    }
+
     suspend fun updateUserCommunities(userId: String, communityId: String, role: String) {
         try {
             val userDocRef = db.collection("users").document(userId)
@@ -122,6 +136,26 @@ class UserRepository(
             }
         } catch (e: Exception) {
             Log.e("UserRepository", "Error updating user data", e)
+        }
+    }
+
+    // Function to check if the user is a member of the community
+    suspend fun fetchIsJoinedFromFirebase(user: UserData, community: Community): Boolean {
+        return try {
+            // Reference to the community's members collection for the current user
+            val memberDoc = db.collection("communities")
+                .document(community.id)
+                .collection("members")
+                .document(user.userId)
+                .get()
+                .await()
+
+            // Check if the document exists
+            memberDoc.exists()
+        } catch (e: Exception) {
+            // Handle exceptions (e.g., network errors)
+            Log.e("UserRepository", "Error checking if user is joined: ${e.message}", e)
+            false
         }
     }
 

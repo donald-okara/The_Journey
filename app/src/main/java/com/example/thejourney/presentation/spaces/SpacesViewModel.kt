@@ -195,6 +195,8 @@ class SpacesViewModel(
                 spaceRepository.db.collection("spaces").document(request.id)
                     .update("approvalStatus", "Live")
                     .await()
+                fetchLiveSpacesByCommunity(request.parentCommunity)
+                fetchPendingSpacesByCommunity(request.parentCommunity)
             } catch (e: Exception) {
                 Log.w("SpacesViewModel", "Error approving space", e)
                 _pendingSpacesState.value = SpaceState.Error("Error approving space: ${e.message}")
@@ -210,6 +212,8 @@ class SpacesViewModel(
                 spaceRepository.db.collection("spaces").document(request.name)
                     .update("status", "Rejected")
                     .await()
+                fetchPendingSpacesByCommunity(request.parentCommunity)
+                fetchRejectedSpacesByCommunity(request.parentCommunity)
             } catch (e: Exception) {
                 Log.w("AdminViewModel", "Error rejecting community", e)
                 _pendingSpacesState.value = SpaceState.Error("Error rejecting space: ${e.message}")

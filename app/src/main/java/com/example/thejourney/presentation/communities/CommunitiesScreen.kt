@@ -170,8 +170,6 @@ fun CommunityItem(
                     model = community.communityBannerUrl,
                     contentDescription = "Community Banner",
                     contentScale = ContentScale.Crop,
-                    placeholder = painterResource(R.drawable.placeholder), // Replace with your placeholder drawable resource
-                    error = painterResource(R.drawable.error), // Replace with your error drawable resource
                     modifier = Modifier.fillMaxSize()
                 )
 
@@ -198,7 +196,7 @@ fun CommunityItem(
                             contentDescription = "Community Profile",
                             contentScale = ContentScale.Crop,
                             placeholder = painterResource(R.drawable.placeholder), // Replace with your placeholder drawable resource
-                            error = painterResource(R.drawable.error),
+                            error = painterResource(R.drawable.placeholder),
                             modifier = Modifier
                                 .size(40.dp)
                                 .clip(CircleShape)

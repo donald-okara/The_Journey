@@ -11,6 +11,7 @@ import com.example.thejourney.data.model.Community
 import com.example.thejourney.data.model.UserData
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class CommunityViewModel(
@@ -23,13 +24,43 @@ class CommunityViewModel(
     private val _users = MutableStateFlow<List<UserData>>(emptyList())
     val users: StateFlow<List<UserData>> = _users
 
-
     private val _requestStatus = MutableStateFlow<RequestStatus>(RequestStatus.Idle)
     val requestStatus: StateFlow<RequestStatus> = _requestStatus
+
+    private val _communityMembers = MutableStateFlow<List<UserData>>(emptyList())
+    val communityMembers: StateFlow<List<UserData>> = _communityMembers
+
+    private val _isJoined = MutableStateFlow<Result<Boolean>>(Result.Loading)
+    val isJoined: StateFlow<Result<Boolean>> = _isJoined.asStateFlow()
 
     init {
         fetchUsers()
         fetchLiveCommunities()
+    }
+
+    fun fetchCommunityMembers(communityId: String) {
+        viewModelScope.launch {
+            try {
+                val members = communityRepository.getCommunityMembers(communityId)
+                _communityMembers.value = members
+            } catch (e: Exception) {
+                Log.e("CommunityViewModel", "Error fetching community members: ${e.message}")
+            }
+        }
+    }
+    fun fetchIsJoined(user: UserData, community: Community) {
+        viewModelScope.launch {
+            _isJoined.value = Result.Loading
+            try {
+                // Replace with your Firebase fetching logic
+                val joined = userRepository.fetchIsJoinedFromFirebase(user, community)
+                _isJoined.value = Result.Success(joined)
+            } catch (e: Exception) {
+                _isJoined.value = Result.Error(e)
+                Log.e("CommunityViewModel", "Failed to fetch join status: ${e.message}")
+
+            }
+        }
     }
 
     fun clearRequestStatus() {
@@ -79,6 +110,7 @@ class CommunityViewModel(
                     userId = user.userId,
                     communityId = community.id
                 )
+
             } catch (e: Exception) {
                 Log.e("CommunityViewModel", "Community join failed: ${e.message}")
             }
@@ -117,6 +149,13 @@ class CommunityViewModel(
         }
     }
 }
+
+sealed class Result<out T> {
+    object Loading : Result<Nothing>()
+    data class Success<out T>(val data: T) : Result<T>()
+    data class Error(val exception: Throwable) : Result<Nothing>()
+}
+
 
 sealed class RequestStatus {
     data object Idle : RequestStatus()

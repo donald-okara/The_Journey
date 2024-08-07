@@ -149,6 +149,21 @@ class CommunityRepository(
         }
     }
 
+    suspend fun getCommunityMembers(communityId: String): List<UserData> {
+        return try {
+            val communityDoc = db.collection("communities").document(communityId).get().await()
+            val community = communityDoc.toObject(Community::class.java)
+            community?.let {
+                val userIds = it.members.map { member -> member.keys.first() }
+                userRepository.fetchUsersByIds(userIds)
+            } ?: emptyList()
+        } catch (e: Exception) {
+            Log.e("CommunityRepository", "Error fetching community members for $communityId", e)
+            emptyList()
+        }
+    }
+
+
     private fun uriToFile(uri: Uri): File? {
         return try {
             val inputStream: InputStream? = context.contentResolver.openInputStream(uri)

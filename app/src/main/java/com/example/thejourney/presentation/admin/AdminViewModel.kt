@@ -45,7 +45,7 @@ class AdminViewModel(
 
 
 
-    private fun fetchPendingRequests() {
+    fun fetchPendingRequests() {
         viewModelScope.launch {
             _pendingState.value = CommunityState.Loading
             try {
@@ -59,7 +59,7 @@ class AdminViewModel(
     }
 
     // Function to check if the current user is an admin
-    private suspend fun fetchAdminStatus() {
+    suspend fun fetchAdminStatus() {
         val userId = userRepository.getCurrentUserId()
         if (userId != null) {
             withContext(Dispatchers.IO) {
@@ -77,7 +77,7 @@ class AdminViewModel(
         }
     }
 
-    private fun fetchLiveCommunities() {
+    fun fetchLiveCommunities() {
         viewModelScope.launch {
             _liveState.value = CommunityState.Loading
             try {
@@ -89,7 +89,7 @@ class AdminViewModel(
         }
     }
 
-    private fun fetchRejectedCommunities() {
+    fun fetchRejectedCommunities() {
         viewModelScope.launch {
             _rejectedState.value = CommunityState.Loading
             try {

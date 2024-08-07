@@ -180,8 +180,6 @@ fun SpacesList(
                                     Button(onClick = {
                                         coroutineScope.launch {
                                             viewModel.approveSpace(request)
-                                            viewModel.fetchPendingSpacesByCommunity(request.id)
-                                            viewModel.fetchLiveSpacesByCommunity(request.id)
                                         }
 
                                     }) {
@@ -191,8 +189,6 @@ fun SpacesList(
                                     Button(onClick = {
                                         coroutineScope.launch {
                                             viewModel.rejectSpace(request)
-                                            viewModel.fetchPendingSpacesByCommunity(request.id)
-                                            viewModel.fetchRejectedSpacesByCommunity(request.id)
                                         }
                                     }) {
                                         Text("Reject")

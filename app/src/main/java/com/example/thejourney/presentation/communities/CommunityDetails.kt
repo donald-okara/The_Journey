@@ -1,6 +1,6 @@
 package com.example.thejourney.presentation.communities
 
-import androidx.compose.foundation.Image
+import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -28,7 +27,6 @@ import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -37,6 +35,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -48,12 +47,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -62,12 +62,12 @@ import com.example.thejourney.domain.UserRepository
 import com.example.thejourney.data.model.Community
 import com.example.thejourney.data.model.Space
 import com.example.thejourney.data.model.UserData
-import com.example.thejourney.presentation.admin.AdminViewModel
-import com.example.thejourney.presentation.admin.CommunityState
 import com.example.thejourney.presentation.spaces.SpaceState
 import com.example.thejourney.presentation.spaces.SpacesViewModel
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun CommunityDetails(
     community: Community,
@@ -80,10 +80,15 @@ fun CommunityDetails(
     onNavigateToApproveSpaces: () -> Unit
 ) {
     val user = userRepository.getCurrentUser()
-    val isLeader =
-        community.members.any { it.containsKey(user?.userId) && it[user?.userId] == "leader" }
+    val isJoined by communityViewModel.isJoined.collectAsState()
+    val isLeader = community.members.any { it.containsKey(user?.userId) && it[user?.userId] == "leader" }
+    var refreshTrigger by remember { mutableStateOf(false) }
 
     LaunchedEffect(community.id) {
+        if (user != null) {
+            communityViewModel.fetchIsJoined(user,community)
+        }
+        communityViewModel.fetchCommunityMembers(community.id)
         spacesViewModel.fetchLiveSpacesByCommunity(community.id)
         spacesViewModel.fetchPendingSpacesByCommunity(community.id)
         spacesViewModel.fetchRejectedSpacesByCommunity(community.id)
@@ -95,20 +100,22 @@ fun CommunityDetails(
                 community = community,
                 user = user,
                 navigateBack = { navigateBack() },
-                communityViewModel = communityViewModel
+                communityViewModel = communityViewModel,
+                spacesViewModel = spacesViewModel,
             )
         },
         modifier = Modifier.fillMaxSize()
-    ) { innerPadding ->
+    ) {
         CommunityDetailsContent(
-            modifier = Modifier.padding(innerPadding),
             community = community,
             user = user,
             communityViewModel = communityViewModel,
             onNavigateToAddSpace = onNavigateToAddSpace,
             spacesViewModel = spacesViewModel,
             onNavigateToSpace = onNavigateToSpace,
-            onNavigateToApproveSpaces = onNavigateToApproveSpaces
+            onNavigateToApproveSpaces = onNavigateToApproveSpaces,
+            onRefresh = { refreshTrigger = !refreshTrigger },
+            isLeader = isLeader
         )
     }
 }
@@ -117,23 +124,44 @@ fun CommunityDetails(
 fun CommunityDetailsContent(
     modifier: Modifier = Modifier,
     community: Community,
+    isLeader : Boolean,
     onNavigateToAddSpace: (Community) -> Unit,
     onNavigateToSpace: (Space) -> Unit,
     user: UserData?,
+    onRefresh: () -> Unit,
     communityViewModel: CommunityViewModel,
     spacesViewModel: SpacesViewModel,
-    onNavigateToApproveSpaces : () -> Unit
+    onNavigateToApproveSpaces : () -> Unit,
 ) {
+    var isJoined by remember {
+        mutableStateOf(community.members.any { it.containsKey(user?.userId) })
+    }
+
     Column(
         modifier = modifier
             .fillMaxHeight(),
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.Start
     ) {
-        SpacesDashboardContent(
+        CommunityHeader(
+            community = community,
+            user = user,
+            onRefresh = onRefresh,
+            communityViewModel = communityViewModel,
             spacesViewModel = spacesViewModel,
-            onNavigateToApproveSpaces = { onNavigateToApproveSpaces() }
+            onJoinStatusChanged = { newIsJoined ->
+                isJoined = newIsJoined
+            }
         )
+
+        HorizontalDivider()
+
+        if(isLeader){
+            SpacesDashboardContent(
+                spacesViewModel = spacesViewModel,
+                onNavigateToApproveSpaces = { onNavigateToApproveSpaces() }
+            )
+        }
 
         HorizontalDivider()
 
@@ -141,7 +169,8 @@ fun CommunityDetailsContent(
             onNavigateToAddSpace = { onNavigateToAddSpace(community) },
             navigateToSpace = {},
             community = community,
-            spacesViewModel = spacesViewModel
+            spacesViewModel = spacesViewModel,
+            isJoined = isJoined
         )
     }
 }
@@ -159,89 +188,103 @@ fun SpacesDashboardContent(
     val rejectedState by spacesViewModel.rejectedSpacesState.collectAsState()
     val liveState by spacesViewModel.liveSpacesState.collectAsState()
 
-    Card(
+    Column(
         modifier = modifier
-            .padding(16.dp)
-            .clickable { onNavigateToApproveSpaces() }
-    ) {
-        Column(
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.Start,
-            modifier = Modifier.padding(16.dp)
+            .fillMaxWidth()
+            .padding(8.dp),
+        verticalArrangement = Arrangement.SpaceAround,
+        horizontalAlignment = Alignment.Start
+    ){
+        Text(
+            modifier = modifier.fillMaxWidth(),
+            text = "Community Leader Dashboard",
+            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+            textAlign = TextAlign.Start,
+        )
+        Card(
+            modifier = modifier
+                .padding(16.dp)
+                .clickable { onNavigateToApproveSpaces() }
         ) {
-            Text(
-                text = "Spaces Overview",
-                style = MaterialTheme.typography.labelLarge
-            )
+            Column(
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.Start,
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text(
+                    text = "Spaces Overview",
+                    style = MaterialTheme.typography.labelLarge
+                )
 
-            Spacer(modifier = modifier.padding(8.dp))
+                Spacer(modifier = modifier.padding(8.dp))
 
-            when (liveState) {
-                is SpaceState.Success ->
-                    Row {
-                        Text(
-                            text = "${(liveState as SpaceState.Success).spaces.size}",
-                            style = MaterialTheme.typography.displaySmall,
-                            color = MaterialTheme.colorScheme.tertiary
-                        )
+                when (liveState) {
+                    is SpaceState.Success ->
+                        Row {
+                            Text(
+                                text = "${(liveState as SpaceState.Success).spaces.size}",
+                                style = MaterialTheme.typography.displaySmall,
+                                color = MaterialTheme.colorScheme.tertiary
+                            )
 
-                        Spacer(modifier = modifier.weight(1f))
+                            Spacer(modifier = modifier.weight(1f))
 
-                        Text(
-                            text = "Live",
-                            style = MaterialTheme.typography.displaySmall,
-                            color = MaterialTheme.colorScheme.tertiary
-                        )
-                    }
+                            Text(
+                                text = "Live",
+                                style = MaterialTheme.typography.displaySmall,
+                                color = MaterialTheme.colorScheme.tertiary
+                            )
+                        }
 
-                is SpaceState.Error -> Text("Error: ${(liveState as SpaceState.Error).message}")
-                else -> CircularProgressIndicator()
-            }
+                    is SpaceState.Error -> Text("Error: ${(liveState as SpaceState.Error).message}")
+                    else -> CircularProgressIndicator()
+                }
 
-            Spacer(modifier = modifier.padding(8.dp))
+                Spacer(modifier = modifier.padding(8.dp))
 
-            when (pendingState) {
-                is SpaceState.Success ->
-                    Row {
-                        Text(
-                            text = "${(pendingState as SpaceState.Success).spaces.size}",
-                            style = MaterialTheme.typography.labelLarge,
-                        )
+                when (pendingState) {
+                    is SpaceState.Success ->
+                        Row {
+                            Text(
+                                text = "${(pendingState as SpaceState.Success).spaces.size}",
+                                style = MaterialTheme.typography.labelLarge,
+                            )
 
-                        Spacer(modifier = modifier.weight(1f))
+                            Spacer(modifier = modifier.weight(1f))
 
-                        Text(
-                            text = "Pending",
-                            style = MaterialTheme.typography.labelMedium
-                        )
-                    }
+                            Text(
+                                text = "Pending",
+                                style = MaterialTheme.typography.labelMedium
+                            )
+                        }
 
-                is SpaceState.Error -> Text("Error: ${(pendingState as SpaceState.Error).message}")
-                else -> CircularProgressIndicator()
-            }
+                    is SpaceState.Error -> Text("Error: ${(pendingState as SpaceState.Error).message}")
+                    else -> CircularProgressIndicator()
+                }
 
-            Spacer(modifier = modifier.padding(8.dp))
+                Spacer(modifier = modifier.padding(8.dp))
 
-            when (rejectedState) {
-                is SpaceState.Success ->
-                    Row {
-                        Text(
-                            text = "${(rejectedState as SpaceState.Success).spaces.size}",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.error
-                        )
+                when (rejectedState) {
+                    is SpaceState.Success ->
+                        Row {
+                            Text(
+                                text = "${(rejectedState as SpaceState.Success).spaces.size}",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.error
+                            )
 
-                        Spacer(modifier = modifier.weight(1f))
+                            Spacer(modifier = modifier.weight(1f))
 
-                        Text(
-                            text = "Rejected",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
+                            Text(
+                                text = "Rejected",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
 
-                is SpaceState.Error -> Text("Error: ${(rejectedState as SpaceState.Error).message}")
-                else -> CircularProgressIndicator()
+                    is SpaceState.Error -> Text("Error: ${(rejectedState as SpaceState.Error).message}")
+                    else -> CircularProgressIndicator()
+                }
             }
         }
     }
@@ -259,35 +302,55 @@ fun SpacesRow(
     community: Community,
     onNavigateToAddSpace: (Community) -> Unit,
     navigateToSpace: (Space) -> Unit,
-    spacesViewModel: SpacesViewModel
+    spacesViewModel: SpacesViewModel,
+    isJoined: Boolean
 ) {
+    val cardWidth = 150.dp // Set a fixed width for the cards
     val spacesState by spacesViewModel.liveSpacesState.collectAsState()
+    Column(
+        modifier = modifier.padding(8.dp),
+        verticalArrangement = Arrangement.SpaceAround,
+        horizontalAlignment = Alignment.Start
+    ){
+        Text(
+            modifier = modifier.fillMaxWidth(),
+            text = "${community.name} Spaces",
+            textAlign = TextAlign.Start,
+            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
+        )
+        Row {
+            if (isJoined) {
+                Card(
+                    modifier = modifier
+                        .width(cardWidth)
+                        .clickable {
+                            onNavigateToAddSpace(community)
+                        }
+                        .padding(16.dp)
+                ) {
+                    Column(
+                        modifier = modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Box(modifier = modifier.fillMaxWidth()) {
+                            Icon(
+                                imageVector = Icons.Default.Groups,
+                                contentDescription = "Add spaces",
+                                modifier = modifier
+                                    .align(Alignment.Center),
+                            )
+                        }
+                        Text(
+                            text = "Add space",
+                            textAlign = TextAlign.Center,
+                        )
+                    }
 
-    Row {
-        Card(
-            modifier = modifier
-                .clickable {
-                    onNavigateToAddSpace(community)
                 }
-                .padding(16.dp)
-        ) {
-            Column(
-                modifier = modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                Box(modifier = modifier.fillMaxWidth()) {
-                    Icon(
-                        imageVector = Icons.Default.Groups, contentDescription = "Add spaces",
-                        modifier = modifier
-                            .align(Alignment.Center),
-                    )
-                }
-                Text(text = "Add space")
             }
-
             //SpacesList
-            when (spacesState){
+            when (spacesState) {
                 is SpaceState.Loading -> {
                     CircularProgressIndicator()
                 }
@@ -296,7 +359,7 @@ fun SpacesRow(
                     Text(text = (spacesState as SpaceState.Error).message)
                 }
 
-                is SpaceState.Success-> {
+                is SpaceState.Success -> {
                     val spaces = (spacesState as SpaceState.Success).spaces
                     SpaceList(
                         spaces = spaces,
@@ -305,9 +368,9 @@ fun SpacesRow(
                 }
 
             }
+
         }
     }
-
 }
 
 @Composable
@@ -332,10 +395,11 @@ fun SpaceCard(
     navigateToSpace: (Space) -> Unit,
     space: Space
 ) {
+    val cardWidth = 200.dp // Set a fixed width for the cards
     Card(
         modifier = Modifier
-            .fillMaxWidth()
             .padding(8.dp)
+            .width(cardWidth)
             .clickable { navigateToSpace(space) },
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -343,7 +407,6 @@ fun SpaceCard(
         Column {
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
                     .height(150.dp)
                     .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
             ) {
@@ -422,89 +485,155 @@ fun CommunityHeader(
     modifier: Modifier = Modifier,
     community: Community,
     user: UserData?,
-    communityViewModel: CommunityViewModel
+    onRefresh: () -> Unit,
+    communityViewModel: CommunityViewModel,
+    spacesViewModel: SpacesViewModel,
+    onJoinStatusChanged: (Boolean) -> Unit // New parameter for propagating `isJoined`
+
 ) {
-    val coroutineScope = rememberCoroutineScope()
     var isJoined by remember {
-        mutableStateOf(community.members.any { it.containsKey(user?.userId) })
+    mutableStateOf(community.members.any { it.containsKey(user?.userId) })
     }
-
+    val spacesState by spacesViewModel.liveSpacesState.collectAsState()
+    val communityMembers by communityViewModel.communityMembers.collectAsState()
     Box(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
-            .height(200.dp),
-        contentAlignment = Alignment.Center
+            .height(256.dp)
     ) {
-        // Background Banner Image
-        if (community.communityBannerUrl != null) {
-            AsyncImage(
-                model = community.communityBannerUrl,
-                contentDescription = "Banner",
-                alpha = 0.6f,
-                modifier = modifier
-                    .fillMaxSize(),
-                contentScale = ContentScale.Crop,
-            )
-        } else {
-            Image(
-                painter = painterResource(id = R.drawable.pattern_gold),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                alpha = 0.6f,
-                modifier = modifier
-                    .scale(1.3f)
-                    .fillMaxSize()
-            )
-        }
+        // AsyncImage with placeholder and error handling
+        AsyncImage(
+            model = community.communityBannerUrl,
+            contentDescription = "Community Banner",
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
 
-        Row(
+        // Semi-transparent overlay
+        Box(
             modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(start = 16.dp, bottom = 16.dp)
-                .fillMaxWidth()
-                .offset(y = 80.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Profile Image
-            if (community.profileUrl != null) {
-                AsyncImage(
-                    model = community.profileUrl,
-                    contentDescription = "Profile picture",
-                    modifier = modifier
-                        .size(128.dp)
-                        .border(4.dp, MaterialTheme.colorScheme.surface, CircleShape)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                Icon(
-                    imageVector = Icons.Filled.GroupWork,
-                    contentDescription = "Profile picture",
-                    modifier = modifier
-                        .size(128.dp)
-                        .border(4.dp, MaterialTheme.colorScheme.surface, CircleShape)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer)
-                )
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.6f))
+        )
+        Column(
+            modifier = modifier.align(Alignment.BottomStart),
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ){
+            Row(
+                modifier = Modifier
+                    .padding(start = 16.dp, bottom = 16.dp)
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                // Profile Image
+                if (community.profileUrl != null) {
+                    AsyncImage(
+                        model = community.profileUrl,
+                        contentDescription = "Profile picture",
+                        modifier = modifier
+                            .size(128.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primaryContainer),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Filled.GroupWork,
+                        contentDescription = "Profile picture",
+                        modifier = modifier
+                            .size(128.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primaryContainer)
+                    )
+                }
+
+                Spacer(modifier = modifier.weight(1f))
+
+                /**
+                 * Community size
+                 */
+
+                Column(
+                    modifier.padding(8.dp)
+                ) {
+                    when (spacesState) {
+                        is SpaceState.Loading -> {
+                            Text(
+                                text = "0",
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            Text(
+                                text = "Spaces",
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = modifier.alpha(0.8f)
+                            )
+                        }
+
+                        is SpaceState.Success -> {
+                            Text(
+                                text = "${(spacesState as SpaceState.Success).spaces.size}",
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            Text(
+                                text = "Spaces",
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = modifier.alpha(0.8f)
+                            )
+                        }
+
+                        is SpaceState.Error -> {
+                            Text(
+                                text = 0.toString(),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = Color.Red
+                            )
+                            Text(
+                                text = "Spaces",
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = modifier.alpha(0.8f)
+                            )
+                        }
+                    }
+                }
+
+                Column(
+                    modifier.padding(8.dp)
+                ) {
+                    Text(
+                        text = "${communityMembers.size}",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+
+                    Text(
+                        text = "Members",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = modifier.alpha(0.8f)
+                    )
+                }
+
             }
-
-            Spacer(modifier = modifier.weight(1f))
-
             if (!isJoined) {
-                Button(onClick = {
-                    coroutineScope.launch {
+                Button(
+                    onClick = {
                         if (user != null) {
                             communityViewModel.onJoinCommunity(user, community)
+                            isJoined = true
+                            onJoinStatusChanged(true)
+                            onRefresh()
                         }
-                        isJoined = true
-                    }
-                }) {
+                    },
+                    modifier = modifier
+                        .padding(8.dp)
+                        .fillMaxWidth()
+                ) {
                     Text(text = "Join")
                 }
             }
         }
     }
+
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -513,35 +642,25 @@ fun CommunityTopBar(
     modifier: Modifier = Modifier,
     community: Community,
     user: UserData?,
-    navigateBack : () -> Unit,
+    navigateBack: () -> Unit,
+    spacesViewModel: SpacesViewModel,
     communityViewModel: CommunityViewModel
-){
-    Box{
-        CommunityHeader(
-            modifier= modifier.padding(bottom = 16.dp),
-            community = community,
-            user = user,
-            communityViewModel = communityViewModel,
-        )
-
-        Spacer(modifier = modifier.padding(16.dp))
-
-        CenterAlignedTopAppBar(
-            title = {
-                Text(
-                    text = "",
-                    style = MaterialTheme.typography.titleLarge
+) {
+    TopAppBar(
+        title = {
+            Text(
+                text = community.name,
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
+            )
+        },
+        navigationIcon = {
+            IconButton(onClick = { navigateBack() }) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Go back"
                 )
-            },
-            navigationIcon = {
-                IconButton(onClick = { navigateBack() }) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Go back"
-                    )
-                }
-            },
-            colors = TopAppBarDefaults.centerAlignedTopAppBarColors(Color.Transparent)
-        )
-    }
+            }
+        },
+        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(Color.Transparent)
+    )
 }
