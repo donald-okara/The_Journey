@@ -81,10 +81,15 @@ class SpacesViewModel(
 
     fun fetchLiveSpacesByCommunity(communityId: String) {
         viewModelScope.launch {
-            spaceRepository.observeLiveSpacesByCommunity(communityId)
-                .collect { spaces ->
-                    _liveSpacesState.value = SpaceState.Success(spaces)
-                }
+            try {
+                spaceRepository.observeLiveSpacesByCommunity(communityId)
+                    .collect { spaces ->
+                        _liveSpacesState.value = SpaceState.Success(spaces)
+                    }
+            } catch (e: Exception) {
+                Log.e("SpacesViewModel", "Error fetching live spaces for community $communityId: ${e.message}")
+                _liveSpacesState.value = SpaceState.Error(e.message ?: "Unknown error")
+            }
         }
     }
 
@@ -92,9 +97,11 @@ class SpacesViewModel(
         viewModelScope.launch {
             _pendingSpacesState.value = SpaceState.Loading
             try {
-                val spaces = spaceRepository.getPendingSpacesByCommunity(communityId)
-                _pendingSpacesState.value = SpaceState.Success(spaces)
-                pendingCount.intValue = spaces.size
+                spaceRepository.observePendingSpacesByCommunity(communityId)
+                    .collect { spaces ->
+                        _pendingSpacesState.value = SpaceState.Success(spaces)
+                        pendingCount.intValue = spaces.size
+                    }
             } catch (e: Exception) {
                 Log.e("SpacesViewModel", "Error pending fetching spaces for community $communityId: ${e.message}")
                 _pendingSpacesState.value = SpaceState.Error(e.message ?: "Unknown error")
@@ -106,8 +113,10 @@ class SpacesViewModel(
         viewModelScope.launch {
             _rejectedSpacesState.value = SpaceState.Loading
             try {
-                val spaces = spaceRepository.getRejectedSpacesByCommunity(communityId)
-                _rejectedSpacesState.value = SpaceState.Success(spaces)
+                spaceRepository.observeRejectedSpacesByCommunity(communityId)
+                    .collect{spaces->
+                        _rejectedSpacesState.value = SpaceState.Success(spaces)
+                    }
             } catch (e: Exception) {
                 Log.e("SpacesViewModel", "Error rejected fetching spaces for community $communityId: ${e.message}")
                 _rejectedSpacesState.value = SpaceState.Error(e.message ?: "Unknown error")

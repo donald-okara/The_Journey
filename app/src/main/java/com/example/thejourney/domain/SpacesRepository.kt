@@ -37,7 +37,48 @@ class SpaceRepository(
 
     fun observeLiveSpacesByCommunity(communityId: String): Flow<List<Space>> = callbackFlow {
         val listenerRegistration = firestore.collection("spaces")
-            .whereEqualTo("communityId", communityId)
+            .whereEqualTo("parentCommunity", communityId)
+            .whereEqualTo("approvalStatus", "Live")
+            .addSnapshotListener { snapshot, exception ->
+                if (exception != null) {
+                    close(exception)
+                    return@addSnapshotListener
+                }
+
+                val spaces = snapshot?.documents?.mapNotNull { doc ->
+                    doc.toObject(Space::class.java)
+                } ?: emptyList()
+
+                trySend(spaces).isSuccess
+            }
+
+        awaitClose { listenerRegistration.remove() }
+    }
+
+    fun observePendingSpacesByCommunity(communityId: String): Flow<List<Space>> = callbackFlow {
+        val listenerRegistration = firestore.collection("spaces")
+            .whereEqualTo("parentCommunity", communityId)
+            .whereEqualTo("approvalStatus", "Pending")
+            .addSnapshotListener { snapshot, exception ->
+                if (exception != null) {
+                    close(exception)
+                    return@addSnapshotListener
+                }
+
+                val spaces = snapshot?.documents?.mapNotNull { doc ->
+                    doc.toObject(Space::class.java)
+                } ?: emptyList()
+
+                trySend(spaces).isSuccess
+            }
+
+        awaitClose { listenerRegistration.remove() }
+    }
+
+    fun observeRejectedSpacesByCommunity(communityId: String): Flow<List<Space>> = callbackFlow {
+        val listenerRegistration = firestore.collection("spaces")
+            .whereEqualTo("parentCommunity", communityId)
+            .whereEqualTo("approvalStatus", "Rejected")
             .addSnapshotListener { snapshot, exception ->
                 if (exception != null) {
                     close(exception)
