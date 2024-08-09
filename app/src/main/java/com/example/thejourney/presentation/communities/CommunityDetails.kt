@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.example.thejourney.presentation.communities
 
 import android.annotation.SuppressLint
@@ -22,8 +24,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.GroupWork
 import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -33,10 +41,13 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -50,11 +61,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.thejourney.R
@@ -64,6 +77,7 @@ import com.example.thejourney.data.model.Space
 import com.example.thejourney.data.model.UserData
 import com.example.thejourney.presentation.spaces.SpaceState
 import com.example.thejourney.presentation.spaces.SpacesViewModel
+import com.example.thejourney.ui.theme.TheJourneyTheme
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
@@ -94,10 +108,7 @@ fun CommunityDetails(
         topBar = {
             CommunityTopBar(
                 community = community,
-                user = user,
                 navigateBack = { navigateBack() },
-                communityViewModel = communityViewModel,
-                spacesViewModel = spacesViewModel,
             )
         },
         modifier = Modifier.fillMaxSize()
@@ -142,6 +153,7 @@ fun CommunityDetailsContent(
         CommunityHeader(
             community = community,
             user = user,
+            isLeader = isLeader,
             onRefresh = onRefresh,
             communityViewModel = communityViewModel,
             spacesViewModel = spacesViewModel,
@@ -476,10 +488,12 @@ fun SpaceCard(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CommunityHeader(
     modifier: Modifier = Modifier,
     community: Community,
+    isLeader: Boolean,
     user: UserData?,
     onRefresh: () -> Unit,
     communityViewModel: CommunityViewModel,
@@ -492,9 +506,15 @@ fun CommunityHeader(
     }
     val spacesState by spacesViewModel.liveSpacesState.collectAsState()
     val communityMembers by communityViewModel.communityMembers.collectAsState()
+
+    //Modal bottom sheet
+    val sheetState = rememberModalBottomSheetState()
+    val scope = rememberCoroutineScope()
+    var showBottomSheet by remember { mutableStateOf(false) }
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .padding(8.dp)
             .height(256.dp)
     ) {
         // AsyncImage with placeholder and error handling
@@ -626,7 +646,34 @@ fun CommunityHeader(
                 ) {
                     Text(text = "Join")
                 }
+            }else{
+                OutlinedButton(
+                    modifier = modifier.fillMaxWidth(),
+                    onClick = { showBottomSheet = true }
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ){
+                        Text(text = "Joined")
+
+                        Spacer(modifier = modifier.width(16.dp))
+
+                        Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = "More")
+                    }
+                }
             }
+        }
+    }
+
+    if (showBottomSheet) {
+        ModalBottomSheet(
+            onDismissRequest = {
+                showBottomSheet = false
+            },
+            sheetState = sheetState
+        ) {
+            CommunityBottomSheet(isLeader = isLeader, community = community)
         }
     }
 
@@ -637,10 +684,8 @@ fun CommunityHeader(
 fun CommunityTopBar(
     modifier: Modifier = Modifier,
     community: Community,
-    user: UserData?,
     navigateBack: () -> Unit,
-    spacesViewModel: SpacesViewModel,
-    communityViewModel: CommunityViewModel
+
 ) {
     TopAppBar(
         title = {
@@ -659,4 +704,136 @@ fun CommunityTopBar(
         },
         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(Color.Transparent)
     )
+}
+
+@Composable
+fun CommunityBottomSheet(
+    modifier: Modifier = Modifier,
+    isLeader: Boolean,
+    community: Community,
+){
+    Column(
+        modifier = modifier.padding(32.dp),
+        verticalArrangement = Arrangement.SpaceBetween,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = community.name,
+            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
+        )
+
+        HorizontalDivider()
+        if (isLeader){
+            CommunityBottomSheetItem(
+                text = "Edit",
+                isDangerZone = false,
+                leadingIcon = Icons.Default.Edit,
+                onClick = { TODO() }
+            )
+        }
+        CommunityBottomSheetItem(
+            text = "Report",
+            isDangerZone = true,
+            leadingIcon = Icons.Default.Flag,
+            onClick = { TODO() }
+        )
+        CommunityBottomSheetItem(
+            text = "Leave",
+            isDangerZone = true,
+            leadingIcon = Icons.AutoMirrored.Filled.Logout,
+            onClick = { TODO() }
+        )
+        if(isLeader){
+            CommunityBottomSheetItem(
+                text = "Delete",
+                isDangerZone = true,
+                leadingIcon = Icons.Default.Delete,
+                onClick = { TODO() }
+            )
+        }
+
+    }
+}
+
+@Composable
+fun CommunityBottomSheetItem(
+    modifier: Modifier = Modifier,
+    text: String,
+    isDangerZone: Boolean = false,
+    leadingIcon: ImageVector,
+    onClick: () -> Unit
+){
+
+    val contentColor = if (isDangerZone) {
+        MaterialTheme.colorScheme.onSurface.copy(
+            red = (MaterialTheme.colorScheme.onSurface.red + MaterialTheme.colorScheme.onError.red) / 2,
+            green = (MaterialTheme.colorScheme.onSurface.green + MaterialTheme.colorScheme.onError.green) / 2,
+            blue = (MaterialTheme.colorScheme.onSurface.blue + MaterialTheme.colorScheme.onError.blue) / 2
+        )
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+        modifier = modifier.alpha(0.8f),
+        text = text,
+        style = MaterialTheme.typography.bodyLarge.copy(color = contentColor),
+    )
+        Spacer(modifier = modifier.weight(1f))
+
+        Icon(
+            modifier = modifier.alpha(0.8f),
+            imageVector = leadingIcon,
+            contentDescription = text,
+            tint = contentColor
+
+        )
+
+    }
+}
+
+@Preview
+@Composable
+fun CommunityBottomSheetItemPreview(){
+    TheJourneyTheme {
+        Column (
+            modifier = Modifier.padding(8.dp),
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ){
+            CommunityBottomSheetItem(
+                text = "Edit",
+                isDangerZone = false,
+                leadingIcon = Icons.Default.Edit,
+                onClick = { TODO() }
+            )
+            CommunityBottomSheetItem(
+                text = "Report",
+                isDangerZone = true,
+                leadingIcon = Icons.Default.Flag,
+                onClick = { TODO() }
+            )
+
+            CommunityBottomSheetItem(
+                text = "Leave",
+                isDangerZone = true,
+                leadingIcon = Icons.AutoMirrored.Filled.Logout,
+                onClick = { TODO() }
+            )
+            CommunityBottomSheetItem(
+                text = "Delete",
+                isDangerZone = true,
+                leadingIcon = Icons.Default.Delete,
+                onClick = { TODO() }
+            )
+        }
+
+    }
+
 }

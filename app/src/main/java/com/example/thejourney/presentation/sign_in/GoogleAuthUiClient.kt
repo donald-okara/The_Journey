@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package com.example.thejourney.presentation.sign_in
 
 import android.content.Intent

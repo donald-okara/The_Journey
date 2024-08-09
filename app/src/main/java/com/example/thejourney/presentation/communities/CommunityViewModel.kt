@@ -183,12 +183,39 @@ class CommunityViewModel(
     /**
      * Demote user to member
      */
-
     suspend fun demoteMember(
         userId : String,
         communityId: String
     ){
         communityRepository.demoteMember(userId = userId,communityId = communityId)
+    }
+
+    /**
+     * Add leaders or editors
+      */
+    suspend fun addLeadersOrEditors(
+        communityId: String,
+        newLeaders: List<UserData>? = null,
+        newEditors: List<UserData>? = null
+    ){
+        communityRepository.addLeadersOrEditors(
+            communityId = communityId,
+            newLeaders = newLeaders,
+            newEditors = newEditors
+        )
+    }
+
+    /**
+     * update community fields
+     */
+    suspend fun updateCommunityFields(
+        communityId: String,
+        updatedFields: Map<String, Any>
+    ){
+        communityRepository.updateCommunityFields(
+            communityId = communityId,
+            updatedFields = updatedFields
+        )
     }
 
     /**

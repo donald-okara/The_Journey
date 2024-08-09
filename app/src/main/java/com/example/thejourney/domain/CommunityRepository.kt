@@ -13,7 +13,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.io.File
 import java.io.FileOutputStream
@@ -290,6 +289,79 @@ class CommunityRepository(
             Log.e("CommunityRepository", "Error demoting member $userId in community $communityId", e)
         }
     }
+
+    /**
+     * Add leaders or editors
+     */
+
+    suspend fun addLeadersOrEditors(
+        communityId: String,
+        newLeaders: List<UserData>? = null,
+        newEditors: List<UserData>? = null
+    ) {
+        try {
+            // Fetch the current community document
+            val communityDoc = db.collection("communities").document(communityId).get().await()
+            val community = communityDoc.toObject(Community::class.java)
+
+            community?.let {
+                // Update the members list
+                val updatedMembers = it.members.toMutableList().apply {
+                    newLeaders?.forEach { leader ->
+                        if (none { member -> member.keys.first() == leader.userId }) {
+                            add(mapOf(leader.userId to "leader"))
+                        }
+                    }
+                    newEditors?.forEach { editor ->
+                        if (none { member -> member.keys.first() == editor.userId }) {
+                            add(mapOf(editor.userId to "editor"))
+                        }
+                    }
+                }
+
+                // Update the community document with the modified members list
+                db.collection("communities").document(communityId)
+                    .update("members", updatedMembers)
+                    .await()
+
+                // Update users' community roles
+                newLeaders?.forEach { leader ->
+                    userRepository.updateUserRoleInCommunity(leader.userId, communityId, "leader")
+                }
+                newEditors?.forEach { editor ->
+                    userRepository.updateUserRoleInCommunity(editor.userId, communityId, "editor")
+                }
+
+                Log.d("CommunityRepository", "Added new leaders/editors to community $communityId")
+            } ?: run {
+                Log.e("CommunityRepository", "Community $communityId not found")
+            }
+        } catch (e: Exception) {
+            Log.e("CommunityRepository", "Error adding leaders/editors to community $communityId", e)
+        }
+    }
+
+
+    /**
+     * Update community fields
+     */
+
+    suspend fun updateCommunityFields(
+        communityId: String,
+        updatedFields: Map<String, Any?>
+    ) {
+        try {
+            // Update the community document with the modified fields
+            db.collection("communities").document(communityId)
+                .update(updatedFields)
+                .await()
+
+            Log.d("CommunityRepository", "Updated community $communityId with new fields: $updatedFields")
+        } catch (e: Exception) {
+            Log.e("CommunityRepository", "Error updating community $communityId", e)
+        }
+    }
+
 
     /**
      * DELETE

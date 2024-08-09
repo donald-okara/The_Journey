@@ -110,7 +110,7 @@ class AdminViewModel(
     fun approveCommunity(request: Community) {
         viewModelScope.launch {
             try {
-                Log.d("AdminViewModel", "Attempting to approve community with ID: ${request.name}")
+                Log.d("AdminViewModel", "Attempting to approve community with ID: ${request.id}")
 
                 db.collection("communities").document(request.id)
                     .update("status", "Live")
@@ -129,9 +129,9 @@ class AdminViewModel(
     fun rejectCommunity(request: Community) {
         viewModelScope.launch {
             try {
-                Log.d("AdminViewModel", "Attempting to reject community with ID: ${request.name}")
+                Log.d("AdminViewModel", "Attempting to reject community with ID: ${request.id}")
 
-                db.collection("communities").document(request.name)
+                db.collection("communities").document(request.id)
                     .update("status", "Rejected")
                     .await()
 
