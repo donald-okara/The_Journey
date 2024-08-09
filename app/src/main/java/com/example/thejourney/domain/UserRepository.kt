@@ -31,11 +31,18 @@ class UserRepository(
 
     }
 
-    fun getCurrentUserId(): String? {
-        return auth.currentUser?.uid
-    }
+    /**
+     * CREATE
+     */
+    //Create user functionality is in sign_in package
 
-    // Function to check if the current user is an admin
+    /**
+     * READ
+     */
+
+    /**
+     * Fetch admin status
+     */
     private suspend fun fetchAdminStatus() {
         val userId = getCurrentUserId()
         if (userId != null) {
@@ -58,30 +65,13 @@ class UserRepository(
         fetchAdminStatus()
     }
 
-    fun getCurrentUser(): UserData? {
-        Log.d("UserRepository", "Fetching current user data")
-        val user = auth.currentUser
-        return user?.let {
-            UserData(
-                userId = it.uid,
-                username = it.displayName ?: "Default Username",
-                alias = null,
-                profilePictureUrl = it.photoUrl?.toString(),
-                headerImageUrl = null,
-                dateOfBirth = null,
-                biography = null,
-                biographyBackgroundImageUrl = null,
-                communities = emptyList(),
-                spaces = emptyList(),
-                spacesApproval = emptyList()
-            )
-        }
-    }
-
     suspend fun fetchUsersByCommunity(communityId: String): List<UserData> {
         return try {
             // Fetch all users
-            val usersSnapshot = db.collection("users").get().await()
+            val usersSnapshot = db.collection("users")
+                .whereNotEqualTo("userId", getCurrentUserId())
+                .get()
+                .await()
             val users = usersSnapshot.toObjects(UserData::class.java)
 
             // Filter users who belong to the specified community
@@ -94,9 +84,15 @@ class UserRepository(
         }
     }
 
+    /**
+     * Fetch users
+     */
     suspend fun fetchUsers(): List<UserData> {
         return try {
-            val snapshot = db.collection("users").get().await()
+            val snapshot = db.collection("users")
+                .whereNotEqualTo("userId", getCurrentUserId())
+                .get()
+                .await()
             snapshot.toObjects(UserData::class.java)
         } catch (e: Exception) {
             Log.e("UserRepository", "Error fetching users", e)
@@ -117,6 +113,40 @@ class UserRepository(
         }
     }
 
+    /**
+     * Get current user
+     */
+    fun getCurrentUser(): UserData? {
+        Log.d("UserRepository", "Fetching current user data")
+        val user = auth.currentUser
+        return user?.let {
+            UserData(
+                userId = it.uid,
+                username = it.displayName ?: "Default Username",
+                alias = null,
+                profilePictureUrl = it.photoUrl?.toString(),
+                headerImageUrl = null,
+                dateOfBirth = null,
+                biography = null,
+                biographyBackgroundImageUrl = null,
+                communities = emptyList(),
+                spaces = emptyList(),
+                spacesApproval = emptyList()
+            )
+        }
+    }
+
+    fun getCurrentUserId(): String? {
+        return auth.currentUser?.uid
+    }
+
+    /**
+     * UPDATE
+     */
+
+    /**
+     * Update user communities and space
+     */
     suspend fun updateUserCommunities(userId: String, communityId: String, role: String) {
         try {
             val userDocRef = db.collection("users").document(userId)
@@ -136,26 +166,6 @@ class UserRepository(
             }
         } catch (e: Exception) {
             Log.e("UserRepository", "Error updating user data", e)
-        }
-    }
-
-    // Function to check if the user is a member of the community
-    suspend fun fetchIsJoinedFromFirebase(user: UserData, community: Community): Boolean {
-        return try {
-            // Reference to the community's members collection for the current user
-            val memberDoc = db.collection("communities")
-                .document(community.id)
-                .collection("members")
-                .document(user.userId)
-                .get()
-                .await()
-
-            // Check if the document exists
-            memberDoc.exists()
-        } catch (e: Exception) {
-            // Handle exceptions (e.g., network errors)
-            Log.e("UserRepository", "Error checking if user is joined: ${e.message}", e)
-            false
         }
     }
 
@@ -208,4 +218,50 @@ class UserRepository(
             Log.e("UserRepository", "Error updating user data", e)
         }
     }
+
+    /**
+     * Update user role in community
+     */
+    suspend fun updateUserRoleInCommunity(
+        userId: String,
+        communityId: String,
+        newRole: String) {
+        try {
+            val userDocRef = db.collection("users").document(userId)
+            val document = userDocRef.get().await()
+
+            if (document.exists()) {
+                val userData = document.toObject(UserData::class.java)
+                userData?.let {
+                    val updatedCommunities = it.communities.toMutableList()
+
+                    // Check if the user already has a role in the community
+                    val communityIndex = updatedCommunities.indexOfFirst { community -> community.keys.first() == communityId }
+
+                    if (communityIndex != -1) {
+                        // Update the existing role
+                        updatedCommunities[communityIndex] = mapOf(communityId to newRole)
+                    } else {
+                        // Add a new role for the community
+                        updatedCommunities.add(mapOf(communityId to newRole))
+                    }
+
+                    it.communities = updatedCommunities
+
+                    // Save the updated user data
+                    userDocRef.set(it).await()
+                    Log.d("UserRepository", "User role updated successfully for userId: $userId in community: $communityId")
+                } ?: Log.w("UserRepository", "No user data found for userId: $userId")
+            } else {
+                Log.w("UserRepository", "No such user data found for userId: $userId")
+            }
+        } catch (e: Exception) {
+            Log.e("UserRepository", "Error updating user role in community", e)
+        }
+    }
+
+    /**
+     * DELETE
+     */
+
 }
